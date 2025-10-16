@@ -5,6 +5,7 @@ import HomeView from '@/views/HomeView.vue'
 import FormView from '@/views/FormView.vue'
 import ResultView from '@/views/ResultView.vue'
 import ZiWeiView from '@/views/ZiWeiView.vue'
+import ZiWeiResult from '@/views/ZiWeiResult.vue'
 import Divination from '@/views/Divination.vue'
 import NameView from '@/views/NameView.vue'
 import CalendarView from '@/views/CalendarView.vue'
@@ -14,7 +15,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/form', name: 'Form', component: FormView },
   { path: '/result', name: 'Result', component: ResultView },
   { path: '/bazi', redirect: '/form' },
+
+  // ✅ ZiWei 系列（已移除 ZiWeiForm）
   { path: '/ziwei', name: 'ZiWei', component: ZiWeiView },
+  { path: '/ziwei/result', name: 'ZiWeiResult', component: ZiWeiResult },
+
   { path: '/divination', name: 'Divination', component: Divination },
   { path: '/name', name: 'Name', component: NameView },
   { path: '/calendar', name: 'Calendar', component: CalendarView }
