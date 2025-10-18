@@ -10,6 +10,7 @@ import Divination from '@/views/Divination.vue'
 import NameView from '@/views/NameView.vue'
 import CalendarView from '@/views/CalendarView.vue'
 import DiagnosticView from '@/views/DiagnosticView.vue'
+import APITestView from '@/views/APITestView.vue'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'Home', component: HomeView },
@@ -24,7 +25,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/divination', name: 'Divination', component: Divination },
   { path: '/name', name: 'Name', component: NameView },
   { path: '/calendar', name: 'Calendar', component: CalendarView },
-  { path: '/diagnostic', name: 'Diagnostic', component: DiagnosticView }
+  { path: '/diagnostic', name: 'Diagnostic', component: DiagnosticView },
+  { path: '/api-test', name: 'APITest', component: APITestView }
 ]
 
 const router = createRouter({

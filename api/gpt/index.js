@@ -10,6 +10,17 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // 支援 GET 請求用於測試
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      message: 'GPT API is working!',
+      method: 'GET',
+      timestamp: new Date().toISOString(),
+      hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+      usage: 'Send POST request with { "prompt": "your question" }'
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
