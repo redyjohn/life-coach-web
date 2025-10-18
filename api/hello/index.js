@@ -13,6 +13,8 @@ module.exports = (req, res) => {
     message: 'Hello from Vercel API!',
     method: req.method,
     timestamp: new Date().toISOString(),
-    hasOpenAIKey: !!process.env.OPENAI_API_KEY
+    hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+    url: req.url,
+    headers: req.headers
   });
 };
