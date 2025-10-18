@@ -9,6 +9,7 @@ import ZiWeiResult from '@/views/ZiWeiResult.vue'
 import Divination from '@/views/Divination.vue'
 import NameView from '@/views/NameView.vue'
 import CalendarView from '@/views/CalendarView.vue'
+import DiagnosticView from '@/views/DiagnosticView.vue'
 
 const routes: RouteRecordRaw[] = [
   { path: '/', name: 'Home', component: HomeView },
@@ -22,7 +23,8 @@ const routes: RouteRecordRaw[] = [
 
   { path: '/divination', name: 'Divination', component: Divination },
   { path: '/name', name: 'Name', component: NameView },
-  { path: '/calendar', name: 'Calendar', component: CalendarView }
+  { path: '/calendar', name: 'Calendar', component: CalendarView },
+  { path: '/diagnostic', name: 'Diagnostic', component: DiagnosticView }
 ]
 
 const router = createRouter({
