@@ -23,7 +23,7 @@ class QuotaMonitor {
 
   // 初始化配額監控
   private initializeQuotaMonitoring() {
-    // 檢查環境變量
+    // 檢查環境變量（異步，不阻塞初始化）
     this.checkEnvironmentQuota()
     
     // 定期檢查配額狀態
@@ -33,18 +33,23 @@ class QuotaMonitor {
   }
 
   // 檢查環境變量配額
-  private checkEnvironmentQuota() {
-    // 在瀏覽器環境中，我們假設有 OpenAI Key（因為服務器會處理）
-    const hasOpenAIKey = true
+  private async checkEnvironmentQuota() {
+    // 默認使用免費服務，直到確認後端可用
     const hasFreeService = this.checkFreeServiceAvailability()
     
     this.quotaStatus = {
-      hasQuota: hasOpenAIKey,
-      service: hasOpenAIKey ? 'openai' : 'free',
+      hasQuota: false, // 默認無配額，需要測試後端連接
+      service: 'free',
       lastCheck: new Date()
     }
 
-    console.log(`📊 配額狀態: ${this.quotaStatus.service} (${this.quotaStatus.hasQuota ? '有配額' : '無配額'})`)
+    const statusText = this.quotaStatus.hasQuota ? '有配額' : '無配額'
+    console.log('📊 配額狀態:', this.quotaStatus.service, statusText)
+    
+    // 異步檢查後端是否可用
+    this.checkQuotaStatus().catch(error => {
+      console.warn('初始配額檢查失敗:', error)
+    })
   }
 
   // 檢查免費服務可用性
@@ -96,31 +101,24 @@ class QuotaMonitor {
   // 檢查 OpenAI 配額
   private async checkOpenAIQuota(): Promise<QuotaStatus> {
     try {
-      // 發送一個簡單的測試請求
-      const response = await fetch('/api/gpt', {
-        method: 'POST',
+      // 獲取 API 基础 URL
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+      const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/health` : '/api/health'
+      
+      // 先檢查健康狀態
+      const healthResponse = await fetch(apiUrl, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: 'test',
-          systemPrompt: 'You are a helpful assistant.',
-          model: 'gpt-4'
-        })
+        }
       })
 
-      if (response.status === 429) {
+      // 如果後端不可用，返回無配額狀態
+      if (!healthResponse.ok) {
+        console.warn('⚠️ 後端服務不可用，使用免費服務')
         return {
           hasQuota: false,
-          service: 'openai',
-          lastCheck: new Date()
-        }
-      }
-
-      if (response.status === 402 || response.status === 403) {
-        return {
-          hasQuota: false,
-          service: 'openai',
+          service: 'free',
           lastCheck: new Date()
         }
       }
@@ -132,9 +130,10 @@ class QuotaMonitor {
       }
     } catch (error) {
       console.error('OpenAI 配額檢查失敗:', error)
+      // 無法連接到後端，使用免費服務
       return {
         hasQuota: false,
-        service: 'openai',
+        service: 'free',
         lastCheck: new Date()
       }
     }

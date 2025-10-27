@@ -3,8 +3,8 @@
 // 命理老師專用 GPT 呼叫服務（擬真互動強化版）
 // ===============================
 
-import { callFreeAI } from './freeAIService'
-import { shouldUseFreeService as checkQuota, recordAPIUsage } from './quotaMonitor'
+import { callFreeAI, shouldUseFreeService as checkFreeQuota } from './freeAIService'
+import { getQuotaStatus, recordAPIUsage as recordUsage } from './quotaMonitor'
 
 interface GPTRequest {
   prompt: string
@@ -96,15 +96,18 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
   const baseDelay = 2000 // 2秒基礎延遲
   
   // 檢查是否應該使用免費 AI 服務
-  if (checkQuota()) {
+  const quotaStatus = getQuotaStatus()
+  const useFreeService = !quotaStatus.hasQuota || quotaStatus.service === 'free' || checkFreeQuota()
+  
+  if (useFreeService) {
     console.log('🆓 使用免費 AI 服務')
     try {
       const result = await callFreeAI(request.prompt, request.systemPrompt || '')
-      recordAPIUsage('free', true)
+      recordUsage('free', true)
       return result
     } catch (error) {
-      console.warn('免費 AI 服務失敗，降級到 OpenAI:', error)
-      recordAPIUsage('free', false)
+      console.warn('免費 AI 服務失敗，嘗試 OpenAI:', error)
+      recordUsage('free', false)
       // 繼續使用 OpenAI 服務
     }
   }
@@ -183,7 +186,7 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
                return callGPT(request, retries - 1)
              }
              
-             recordAPIUsage('openai', false)
+             recordUsage('openai', false)
              return errorMessage
     }
 
@@ -196,7 +199,7 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
     }
 
     const result = data.content || '⚠️ 無法取得命盤分析結果。'
-    recordAPIUsage('openai', true)
+    recordUsage('openai', true)
     return result
 
   } catch (error) {
@@ -211,7 +214,14 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
     }
     
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      return '⚠️ 無法連接到伺服器，請確認後端服務是否正常運行。'
+      // 如果无法连接到后端，尝试使用免费服务
+      console.log('⚠️ 無法連接到後端服務器，嘗試使用免費 AI 服務')
+      try {
+        const result = await callFreeAI(request.prompt, request.systemPrompt || '')
+        return result
+      } catch (freeError) {
+        return '⚠️ 無法連接到伺服器。請確保：\n\n1. 後端服務正在運行（npm run server）\n2. 或部署完整應用到 Vercel/Netlify\n3. 詳見 DEPLOYMENT.md'
+      }
     }
     return '⚠️ 網路異常，請檢查連線後再試。'
   }
