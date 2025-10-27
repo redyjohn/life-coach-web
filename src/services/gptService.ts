@@ -5,6 +5,7 @@
 
 import { callFreeAI, shouldUseFreeService as checkFreeQuota } from './freeAIService'
 import { getQuotaStatus, recordAPIUsage as recordUsage } from './quotaMonitor'
+import { API_BASE_URL as configApiUrl } from '@/config'
 
 interface GPTRequest {
   prompt: string
@@ -73,7 +74,8 @@ const requestThrottler = new RequestThrottler()
  */
 export async function checkAPIHealth(): Promise<boolean> {
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+    // 优先使用配置文件中的 URL，然后是环境变量，最后是默认路径
+    const API_BASE_URL = configApiUrl || import.meta.env.VITE_API_BASE_URL || ''
     const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/health` : '/api/health'
     
     const response = await fetch(apiUrl, {
@@ -115,8 +117,8 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
   // 使用請求頻率控制
   return requestThrottler.throttle(async () => {
     try {
-      // 获取 API 基础 URL
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+      // 获取 API 基础 URL（优先使用配置文件中的 URL）
+      const API_BASE_URL = configApiUrl || import.meta.env.VITE_API_BASE_URL || ''
       const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/gpt` : '/api/gpt'
       
       const response = await fetch(apiUrl, {

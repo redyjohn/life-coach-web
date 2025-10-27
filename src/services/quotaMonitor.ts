@@ -102,7 +102,14 @@ class QuotaMonitor {
   private async checkOpenAIQuota(): Promise<QuotaStatus> {
     try {
       // 獲取 API 基础 URL
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+      // 优先使用配置文件，然后环境变量，最后默认路径
+      let API_BASE_URL = ''
+      try {
+        const config = await import('../config')
+        API_BASE_URL = config.API_BASE_URL || import.meta.env.VITE_API_BASE_URL || ''
+      } catch {
+        API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+      }
       const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/health` : '/api/health'
       
       // 先檢查健康狀態
