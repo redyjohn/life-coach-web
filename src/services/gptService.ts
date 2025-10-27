@@ -73,7 +73,10 @@ const requestThrottler = new RequestThrottler()
  */
 export async function checkAPIHealth(): Promise<boolean> {
   try {
-    const response = await fetch('/api/health', {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+    const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/health` : '/api/health'
+    
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -109,7 +112,11 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
   // 使用請求頻率控制
   return requestThrottler.throttle(async () => {
     try {
-      const response = await fetch('/api/gpt', {
+      // 获取 API 基础 URL
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+      const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/gpt` : '/api/gpt'
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
