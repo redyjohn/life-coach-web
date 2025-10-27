@@ -24,8 +24,12 @@ export function useAdGating() {
     const nextQuestionNumber = askCount.value + 1
     // 奇數次免費，偶數次需廣告
     if (nextQuestionNumber % 2 === 1) {
-      return '🆓 免費提問'
+      return '🆓 可免費提問'
+    } else if (adClicked.value) {
+      // 偶數次但已點擊廣告，可以提問
+      return '✅ 可免費提問'
     } else {
+      // 偶數次且未點擊廣告
       return '🎬 需觀看廣告'
     }
   })
@@ -35,7 +39,12 @@ export function useAdGating() {
     if (needsAd.value) {
       return '🎬 觀看廣告後提問'
     } else {
-      return '💫 請教命理老師'
+      const nextQuestionNumber = askCount.value + 1
+      if (nextQuestionNumber % 2 === 1) {
+        return '💫 免費提問'
+      } else {
+        return '✅ 可免費提問'
+      }
     }
   })
 
