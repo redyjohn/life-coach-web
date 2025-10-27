@@ -2,7 +2,7 @@
   <div class="name-analysis">
     <!-- 頁面標題 -->
     <div class="page-header">
-      <h1>📝 姓名學分析</h1>
+      <h1>✍️ 姓名學分析</h1>
       <p class="subtitle">透過姓名筆畫與五行，探索您的命格奧秘</p>
     </div>
 

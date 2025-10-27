@@ -174,7 +174,7 @@ const clearError = (field: string) => {
 <template>
   <div class="form-wrapper">
     <div class="form-header">
-      <h1>🔮 探索你的紫微命盤</h1>
+      <h1>⭐ 探索你的紫微命盤</h1>
       <p class="subtitle">透過生辰八字，洞察命運軌跡</p>
     </div>
 
