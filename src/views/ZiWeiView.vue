@@ -174,7 +174,7 @@ const clearError = (field: string) => {
 <template>
   <div class="form-wrapper">
     <div class="form-header">
-      <h1>✨ 探索你的紫微命盤</h1>
+      <h1>🔮 探索你的紫微命盤</h1>
       <p class="subtitle">透過生辰八字，洞察命運軌跡</p>
     </div>
 
@@ -299,9 +299,9 @@ const clearError = (field: string) => {
   max-width: 520px;
   margin: 20px auto;
   padding: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
   font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif;
 }
 
@@ -366,9 +366,9 @@ const clearError = (field: string) => {
 
 .form-input:focus,
 .form-select:focus {
-  border-color: #667eea;
+  border-color: #8B5CF6;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .form-input.error,
@@ -397,7 +397,7 @@ const clearError = (field: string) => {
   padding: 14px 20px;
   font-size: 16px;
   font-weight: 600;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
   border: none;
   border-radius: 10px;
   color: white;
@@ -409,7 +409,7 @@ const clearError = (field: string) => {
 
 .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
 }
 
 .submit-btn:disabled {

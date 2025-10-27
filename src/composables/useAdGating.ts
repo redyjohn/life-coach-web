@@ -2,15 +2,17 @@ import { ref, computed } from 'vue'
 
 /**
  * 統一的廣告 gating 策略
- * 策略：第1次免費，第2次需廣告，第3次免費，第4次需廣告...
+ * 策略：奇數次免費（第1、3、5...次），偶數次需廣告（第2、4、6...次）
  */
 export function useAdGating() {
   const askCount = ref(0)
   const adClicked = ref(false)
 
   // 計算是否需要廣告
+  // 偶數次（2, 4, 6, ...）需要廣告，奇數次（1, 3, 5, ...）免費
   const needsAd = computed(() => {
     const nextQuestionNumber = askCount.value + 1
+    // 偶數次需要廣告，但用戶需先點擊廣告
     return nextQuestionNumber % 2 === 0 && !adClicked.value
   })
 
@@ -20,12 +22,11 @@ export function useAdGating() {
   // 獲取當前狀態文字
   const getStatusText = computed(() => {
     const nextQuestionNumber = askCount.value + 1
-    if (nextQuestionNumber === 1) {
+    // 奇數次免費，偶數次需廣告
+    if (nextQuestionNumber % 2 === 1) {
       return '🆓 免費提問'
-    } else if (nextQuestionNumber % 2 === 0) {
-      return '🎬 需觀看廣告'
     } else {
-      return '🆓 免費提問'
+      return '🎬 需觀看廣告'
     }
   })
 

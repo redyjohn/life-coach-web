@@ -58,6 +58,17 @@ const loadingStates = ref({
   yearAdvice: true
 })
 
+// 區塊顯示狀態 - 控制區塊的出現動畫
+const sectionVisibility = ref({
+  baZi: false,
+  dayMaster: false,
+  chartAnalysis: false,
+  suggestion: false,
+  luckCycle: false,
+  currentLuck: false,
+  yearAdvice: false
+})
+
 // GPT 相關狀態
 const promptHint = ref('')
 const questionHistory = ref<QuestionHistoryItem[]>([])
@@ -85,15 +96,15 @@ const canAskGPT = computed(() => canAsk.value && !isAsking.value)
 
 const defaultFallbackReply = '🙇‍♂️ 非常抱歉，您所提的問題無法用八字解析，您要不要試試看我們其他 AI 老師的服務？'
 
-// 響應式的內容數組 - 所有區塊都預設顯示
+// 響應式的內容數組 - 控制區塊顯示和載入狀態
 const sectionContents = computed<SectionContent[]>(() => [
-  { title: '一、個人八字（四柱）', text: baZi.value, show: true, loading: loadingStates.value.baZi },
-  { title: '二、日主分析', text: dayMaster.value, show: true, loading: loadingStates.value.dayMaster },
-  { title: '三、命盤分析', text: chartAnalysis.value, show: true, loading: loadingStates.value.chartAnalysis },
-  { title: '四、命理建議', text: suggestion.value, show: true, loading: loadingStates.value.suggestion },
-  { title: '五、大運列表', text: luckCycle.value, show: true, loading: loadingStates.value.luckCycle },
-  { title: '六、今年流年分析', text: currentLuck.value, show: true, loading: loadingStates.value.currentLuck },
-  { title: '七、流年建議', text: yearAdvice.value, show: true, loading: loadingStates.value.yearAdvice }
+  { title: '一、個人八字（四柱）', text: baZi.value, show: sectionVisibility.value.baZi, loading: loadingStates.value.baZi },
+  { title: '二、日主分析', text: dayMaster.value, show: sectionVisibility.value.dayMaster, loading: loadingStates.value.dayMaster },
+  { title: '三、命盤分析', text: chartAnalysis.value, show: sectionVisibility.value.chartAnalysis, loading: loadingStates.value.chartAnalysis },
+  { title: '四、命理建議', text: suggestion.value, show: sectionVisibility.value.suggestion, loading: loadingStates.value.suggestion },
+  { title: '五、大運列表', text: luckCycle.value, show: sectionVisibility.value.luckCycle, loading: loadingStates.value.luckCycle },
+  { title: '六、今年流年分析', text: currentLuck.value, show: sectionVisibility.value.currentLuck, loading: loadingStates.value.currentLuck },
+  { title: '七、流年建議', text: yearAdvice.value, show: sectionVisibility.value.yearAdvice, loading: loadingStates.value.yearAdvice }
 ])
 
 // 需要使用 pre 標籤的索引
@@ -138,6 +149,9 @@ onMounted(async () => {
 
 // 載入所有區塊內容的函數
 async function loadAllSections() {
+  // 立即顯示所有區塊標題
+  showAllSections()
+  
   // 同時開始載入基礎數據（八字、日主分析、建議）
   Promise.all([
     loadBaZiData(),
@@ -160,6 +174,18 @@ async function loadAllSections() {
       loadYearAdviceData()
     ])
   }, 3000)
+}
+
+// 顯示所有區塊標題的函數
+function showAllSections() {
+  // 立即顯示所有區塊
+  sectionVisibility.value.baZi = true
+  sectionVisibility.value.dayMaster = true
+  sectionVisibility.value.chartAnalysis = true
+  sectionVisibility.value.suggestion = true
+  sectionVisibility.value.luckCycle = true
+  sectionVisibility.value.currentLuck = true
+  sectionVisibility.value.yearAdvice = true
 }
 
 // 個別載入函數
@@ -301,11 +327,10 @@ async function handleAskGPT() {
   
   questionHistory.value.push({ 
     question: currentQ, 
-    answer: '⏳ 八字老師正在為您解析中...' 
+    answer: '⏳ 八老師解盤中...' 
   })
   
   userQuestion.value = ''
-  adClicked.value = false
 
   try {
     let reply = await askGPT(currentQ, userData)
@@ -322,7 +347,7 @@ async function handleAskGPT() {
     console.error('GPT 回覆失敗:', error)
     const lastIndex = questionHistory.value.length - 1
     if (lastIndex >= 0) {
-      questionHistory.value[lastIndex].answer = '❌ 八字老師暫時無法回應，請稍後再試。'
+      questionHistory.value[lastIndex].answer = '❌ 八老師暫時無法回應，請稍後再試。'
     }
   } finally {
     isAsking.value = false
@@ -396,9 +421,32 @@ function getRandomHint(): string {
 </script>
 
 <template>
-  <div class="result">
-    <div v-if="isLoading" class="loading">
-      ☯️ 正在分析您的命盤，請稍候... ☯️
+  <div class="bazi-analysis">
+    <!-- 頁面標題 -->
+    <div class="page-header">
+      <h1>☯️ 八字命理分析</h1>
+      <p class="subtitle">透過生辰八字，探索您的命格奧秘</p>
+    </div>
+
+    <div v-if="isLoading" class="loading-section">
+      <div class="loading-card">
+        <h2>🔮 八老師正在分析中</h2>
+        <div class="loading-animation">
+          <div class="mystical-circle">
+            <div class="bazi-symbols">
+              <span class="symbol">☯️</span>
+              <span class="symbol">☰</span>
+              <span class="symbol">☱</span>
+              <span class="symbol">☲</span>
+              <span class="symbol">☳</span>
+            </div>
+            <div class="bazi-counter">
+              <div class="bazi-item" v-for="n in 8" :key="n"></div>
+            </div>
+          </div>
+          <p class="loading-text">正在分析您的命盤...</p>
+        </div>
+      </div>
     </div>
 
     <div v-else>
@@ -414,7 +462,7 @@ function getRandomHint(): string {
         <div 
           v-for="(content, index) in sectionContents" 
           :key="content.title"
-          v-show="content.show && content.text"
+          v-show="content.show"
           class="result-section"
           :class="{ 'loading-section': content.loading }"
         >
@@ -423,7 +471,7 @@ function getRandomHint(): string {
           <!-- 載入動畫 -->
           <div v-if="content.loading" class="loading-animation">
             <div class="spinner"></div>
-            <span>八字老師正在為您解析...</span>
+            <span>八老師解盤中</span>
           </div>
           
           <!-- 內容顯示 -->
@@ -436,7 +484,7 @@ function getRandomHint(): string {
 
       <!-- GPT 問答區域 -->
       <div class="gpt-question">
-        <h3>🎯 繼續向八字老師提問</h3>
+        <h3>🎯 繼續向八老師提問</h3>
         <p v-if="promptHint" class="gpt-hint">{{ promptHint }}</p>
         
         <!-- 動態引導提示 -->
@@ -462,7 +510,7 @@ function getRandomHint(): string {
         <div v-for="(chat, index) in questionHistory" :key="index" class="gpt-response">
           <strong>🙋‍♀️ 您的問題：</strong>
           <p>{{ chat.question }}</p>
-          <strong>☯️ 八字老師解答：</strong>
+          <strong>☯️ 八老師解答：</strong>
           <p>{{ chat.answer }}</p>
         </div>
 
@@ -471,7 +519,7 @@ function getRandomHint(): string {
           <h4>✍️ 請輸入您想了解的問題：</h4>
           <textarea 
             v-model="userQuestion" 
-            :placeholder="isAsking ? '八字老師正在思考中，請稍候...' : '例如：我明年適合轉職嗎？從八字看有什麼建議？'"
+            :placeholder="isAsking ? '八老師正在思考中，請稍候...' : '例如：我明年適合轉職嗎？從八字看有什麼建議？'"
             :disabled="isAsking"
             @keydown.enter.ctrl="handleAskGPT"
             class="question-textarea"
@@ -483,12 +531,17 @@ function getRandomHint(): string {
               :disabled="!canAskGPT || !userQuestion.trim()"
               class="ask-btn"
             >
-              <span v-if="isAsking">🔄 老師解析中...</span>
+              <span v-if="isAsking">🔄 八老師解析中...</span>
               <span v-else>{{ getButtonText }}</span>
             </button>
             
             <small class="input-tip">💡 按 Ctrl + Enter 可快速送出問題</small>
           </div>
+        </div>
+
+        <!-- 專業提醒 -->
+        <div class="professional-note">
+          <p>📋 <strong>專業提醒：</strong>本站提供專業八字命理分析，如需其他命理諮詢，歡迎使用我們的紫微斗數、占卜系統、姓名學或擇日系統服務。</p>
         </div>
 
         <!-- 廣告橫幅 -->
@@ -497,12 +550,7 @@ function getRandomHint(): string {
           @click="handleAdClick"
           :class="{ 'ad-activated': adClicked }"
         >
-          {{ adClicked ? '✅ 謝謝支持！您可以繼續免費提問' : '🎁 點擊觀看廣告，支持八字老師繼續為您服務' }}
-        </div>
-        
-        <!-- 專業提醒 -->
-        <div class="professional-note">
-          <p>📋 <strong>專業提醒：</strong>本站提供專業八字命理分析，如需其他命理諮詢，歡迎使用我們的紫微斗數、占卜系統、姓名學或擇日系統服務。</p>
+          {{ adClicked ? '✅ 謝謝支持！您可以繼續免費提問' : '🎁 點擊觀看廣告，支持八老師繼續為您服務' }}
         </div>
       </div>
 
@@ -522,12 +570,59 @@ function getRandomHint(): string {
 </template>
 
 <style scoped>
-.result {
-  max-width: 800px;
-  margin: 40px auto;
+.bazi-analysis {
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 20px;
   font-family: 'Microsoft JhengHei', sans-serif;
-  background-color: #f7f9fc;
+  background: linear-gradient(135deg, #f7f9fc 0%, #e8f4f8 100%);
+  min-height: 100vh;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+  border-radius: 20px;
+  color: white;
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+}
+
+.page-header h1 {
+  font-size: 2.5rem;
+  margin: 0 0 16px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  margin: 0;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+.loading-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.loading-card {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.loading-card h2 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #8B5CF6;
+  padding-bottom: 10px;
 }
 
 .loading {
@@ -564,23 +659,25 @@ function getRandomHint(): string {
 }
 
 .result-section {
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  margin-bottom: 28px;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
   transition: all 0.3s ease;
+  border-left: 4px solid #8B5CF6;
 }
 
 .result-section:hover {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.2);
 }
 
-h2 {
-  font-size: 20px;
+.result-section h2 {
+  font-size: 1.4rem;
   color: #2c3e50;
-  margin-bottom: 16px;
-  border-left: 4px solid #d03c3c;
+  margin-bottom: 20px;
+  border-left: 4px solid #8B5CF6;
   padding-left: 12px;
 }
 
@@ -601,17 +698,22 @@ h2 {
   border: 1px solid #e9ecef;
 }
 
-.gpt-question {
-  background: #fff7f0;
-  padding: 24px;
-  border-radius: 12px;
+.qa-section {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
   margin-top: 40px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.gpt-question h3 {
+.qa-section h3 {
   margin-top: 0;
   color: #2c3e50;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  text-align: center;
+  border-bottom: 2px solid #8B5CF6;
+  padding-bottom: 10px;
 }
 
 .gpt-hint {
@@ -643,8 +745,8 @@ h2 {
 
 .quick-question-btn {
   background: linear-gradient(135deg, #fff, #f8f9fa);
-  border: 2px solid #d03c3c;
-  color: #d03c3c;
+  border: 2px solid #8B5CF6;
+  color: #8B5CF6;
   padding: 10px 16px;
   border-radius: 20px;
   cursor: pointer;
@@ -652,14 +754,14 @@ h2 {
   font-weight: 500;
   transition: all 0.3s ease;
   white-space: nowrap;
-  box-shadow: 0 2px 6px rgba(208, 60, 60, 0.1);
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1);
 }
 
 .quick-question-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d03c3c, #b83333);
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(208, 60, 60, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .quick-question-btn:disabled {
@@ -682,7 +784,8 @@ textarea {
 
 textarea:focus {
   outline: none;
-  border-color: #d03c3c;
+  border-color: #8B5CF6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 textarea:disabled {
@@ -691,7 +794,7 @@ textarea:disabled {
 }
 
 .ask-btn {
-  background-color: #d03c3c;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -699,13 +802,14 @@ textarea:disabled {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   margin-right: 12px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .ask-btn:hover:not(:disabled) {
-  background-color: #b83333;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
 }
 
 .ask-btn:disabled {
@@ -716,23 +820,23 @@ textarea:disabled {
 
 .ad-banner {
   margin-top: 24px;
-  background: linear-gradient(135deg, #fff0f0, #ffe6e6);
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
   text-align: center;
   padding: 20px;
   border-radius: 12px;
-  border: 2px dashed #d03c3c;
+  border: 2px dashed #ffc107;
   cursor: pointer;
   font-size: 15px;
   font-weight: 500;
-  color: #b20000;
+  color: #856404;
   transition: all 0.3s ease;
-  box-shadow: 0 3px 10px rgba(208, 60, 60, 0.1);
+  box-shadow: 0 3px 10px rgba(255, 193, 7, 0.1);
 }
 
 .ad-banner:hover {
-  background: linear-gradient(135deg, #ffe6e6, #ffd6d6);
+  background: linear-gradient(135deg, #ffeaa7, #ffd93d);
   transform: scale(1.02);
-  box-shadow: 0 5px 15px rgba(208, 60, 60, 0.2);
+  box-shadow: 0 5px 15px rgba(255, 193, 7, 0.2);
 }
 
 .ad-banner.ad-activated {
@@ -742,14 +846,31 @@ textarea:disabled {
   box-shadow: 0 3px 10px rgba(40, 167, 69, 0.2);
 }
 
-.gpt-response {
+.qa-history {
   margin: 24px 0;
-  background: linear-gradient(135deg, #f0f9ff, #e6f3ff);
+  background: linear-gradient(135deg, #f8f9ff, #e8f4f8);
   padding: 20px;
-  border-left: 5px solid #4a90e2;
+  border-left: 5px solid #8B5CF6;
   border-radius: 12px;
   animation: slideIn 0.5s ease;
-  box-shadow: 0 3px 10px rgba(74, 144, 226, 0.1);
+  box-shadow: 0 3px 10px rgba(139, 92, 246, 0.1);
+}
+
+.question-item, .answer-item {
+  margin-bottom: 15px;
+}
+
+.question-item strong, .answer-item strong {
+  color: #2c3e50;
+  font-size: 15px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.question-item p, .answer-item p {
+  margin: 8px 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
 }
 
 @keyframes slideIn {
@@ -864,27 +985,109 @@ textarea:disabled {
 }
 
 .loading-animation {
+  text-align: center;
+  padding: 40px;
+}
+
+.mystical-circle {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 30px;
+  border: 3px solid #8B5CF6;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  color: #666;
-  font-size: 14px;
+  animation: rotate 10s linear infinite;
+}
+
+.bazi-symbols {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.bazi-symbols .symbol {
+  position: absolute;
+  font-size: 2rem;
+  color: #8B5CF6;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.bazi-symbols .symbol:nth-child(1) { top: 10px; left: 50%; transform: translateX(-50%); animation-delay: 0s; }
+.bazi-symbols .symbol:nth-child(2) { top: 50%; right: 10px; transform: translateY(-50%); animation-delay: 0.4s; }
+.bazi-symbols .symbol:nth-child(3) { bottom: 10px; left: 50%; transform: translateX(-50%); animation-delay: 0.8s; }
+.bazi-symbols .symbol:nth-child(4) { top: 50%; left: 10px; transform: translateY(-50%); animation-delay: 1.2s; }
+.bazi-symbols .symbol:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: 1.6s; }
+
+.bazi-counter {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 2px solid #8B5CF6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(139, 92, 246, 0.1);
+  flex-wrap: wrap;
+  padding: 10px;
+}
+
+.bazi-item {
+  width: 8px;
+  height: 8px;
+  background: #8B5CF6;
+  border-radius: 50%;
+  margin: 1px;
+  animation: baziAnimation 1.5s ease-in-out infinite;
+}
+
+.bazi-item:nth-child(1) { animation-delay: 0s; }
+.bazi-item:nth-child(2) { animation-delay: 0.1s; }
+.bazi-item:nth-child(3) { animation-delay: 0.2s; }
+.bazi-item:nth-child(4) { animation-delay: 0.3s; }
+.bazi-item:nth-child(5) { animation-delay: 0.4s; }
+.bazi-item:nth-child(6) { animation-delay: 0.5s; }
+.bazi-item:nth-child(7) { animation-delay: 0.6s; }
+.bazi-item:nth-child(8) { animation-delay: 0.7s; }
+
+.loading-text {
+  font-size: 1.2rem;
+  color: #8B5CF6;
+  font-weight: 600;
+  animation: pulse 2s ease-in-out infinite;
 }
 
 .spinner {
-  width: 24px;
-  height: 24px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #d03c3c;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #f8f9ff;
+  border-top: 3px solid #8B5CF6;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 12px;
+  animation: spin 1.2s linear infinite;
+  margin-right: 16px;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+@keyframes baziAnimation {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.7; }
 }
 
 /* 引導提示樣式 */
@@ -932,9 +1135,9 @@ textarea:disabled {
 
 .question-textarea:focus {
   outline: none;
-  border-color: #d03c3c;
+  border-color: #8B5CF6;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(208, 60, 60, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .question-textarea:disabled {
@@ -999,21 +1202,38 @@ textarea:disabled {
   line-height: 1.6;
 }
 @media (max-width: 768px) {
-  .result {
-    margin: 20px auto;
+  .bazi-analysis {
     padding: 16px;
   }
   
-  .result-section {
-    padding: 16px;
+  .page-header {
+    padding: 30px 16px;
   }
   
-  .gpt-question {
-    padding: 16px;
+  .page-header h1 {
+    font-size: 2rem;
+  }
+  
+  .result-section, .qa-section {
+    padding: 20px;
+  }
+  
+  .mystical-circle {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .bazi-symbols .symbol {
+    font-size: 1.5rem;
   }
   
   .quick-questions {
     flex-direction: column;
+  }
+  
+  .quick-question-btn {
+    width: 100%;
+    margin-bottom: 8px;
   }
   
   .dialog-buttons {
