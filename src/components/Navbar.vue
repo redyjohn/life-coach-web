@@ -40,7 +40,7 @@
 .nav-links {
   display: flex;
   list-style: none;
-  gap: 24px;
+  gap: 8px;
   padding: 0;
   margin: 0;
 }
@@ -49,11 +49,21 @@
   color: #333;
   font-weight: 500;
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: block;
+}
+
+.nav-links li a:hover {
+  background-color: #f0f7ff;
+  color: #0d6efd;
 }
 
 .nav-links li a.router-link-exact-active {
   color: #0d6efd;
   font-weight: bold;
+  background-color: #e7f3ff;
+  box-shadow: 0 2px 4px rgba(13, 110, 253, 0.15);
 }
 </style>
