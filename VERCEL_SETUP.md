@@ -91,12 +91,78 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://your-app-name
 
 ### 问题 1: API 返回 500 错误
 
-**原因**: 环境变量未正确设置
+**常见原因**:
 
-**解决**:
-1. 检查 Vercel 项目设置中的环境变量
-2. 确认 `OPENAI_API_KEY` 已添加
-3. 重新部署
+1. **OpenAI API Key 未配置**（最常见）
+   - 症状：浏览器控制台显示 `500 Internal Server Error`
+   - 错误信息：`OpenAI API key not configured`
+   - 解决：
+     1. 登录 Vercel Dashboard
+     2. 进入项目设置 → Environment Variables
+     3. 添加环境变量：
+        - Name: `OPENAI_API_KEY`
+        - Value: `sk-...`（您的 OpenAI API Key）
+     4. 重新部署项目（在 Deployments 页面点击 "Redeploy"）
+
+2. **API Key 无效或过期**
+   - 症状：500 错误，但错误信息显示 API key 相关
+   - 解决：
+     1. 检查 OpenAI API Key 是否有效
+     2. 登录 https://platform.openai.com/api-keys 检查
+     3. 确认账户有足够的额度
+
+3. **请求超时或网络问题**
+   - 症状：500 错误，但错误信息不明确
+   - 解决：
+     1. 检查 Vercel 函数日志（Vercel Dashboard → Functions → Logs）
+     2. 查看是否有超时错误
+     3. 如果 prompt 太长，考虑缩短请求内容
+
+4. **OpenAI API 配额用完**
+   - 症状：500 错误，错误信息包含 "quota" 或 "billing"
+   - 解决：
+     1. 登录 OpenAI 账户检查配额
+     2. 充值或升级账户
+
+**调试步骤**:
+
+1. **检查 Vercel 函数日志**:
+   - 登录 Vercel Dashboard
+   - 进入项目 → Functions → 点击 `api/gpt`
+   - 查看最近的日志，寻找错误信息
+
+2. **测试 API 端点**:
+   ```bash
+   # 测试健康检查
+   curl https://your-app-name.vercel.app/api/health
+   
+   # 测试 GPT API（需要 API Key）
+   curl -X POST https://your-app-name.vercel.app/api/gpt \
+     -H "Content-Type: application/json" \
+     -d '{"prompt": "测试"}'
+   ```
+
+3. **检查环境变量**:
+   - Vercel Dashboard → Settings → Environment Variables
+   - 确认 `OPENAI_API_KEY` 存在且值正确
+   - 注意：环境变量区分大小写
+
+4. **查看浏览器控制台**:
+   - 打开浏览器开发者工具（F12）
+   - 查看 Console 和 Network 标签
+   - 查看详细的错误信息
+
+**改进的错误处理**:
+
+最新版本的代码已经改进了错误处理：
+- 后端会返回更详细的错误信息
+- 前端会显示具体的错误原因
+- 如果是 API Key 未配置，会明确提示
+
+如果看到错误信息：
+- `OpenAI API 金鑰未配置` → 需要在 Vercel 设置环境变量
+- `API 配額已用完` → 需要充值 OpenAI 账户
+- `請求過於頻繁` → 等待一段时间后重试
 
 ### 问题 2: CORS 错误
 

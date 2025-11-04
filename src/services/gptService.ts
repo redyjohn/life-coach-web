@@ -128,33 +128,52 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
         const errorData = await response.json()
         console.error('GPT API error:', errorData)
         
-        if (errorData.error) {
-          const error = errorData.error
+        // 提取錯誤訊息（優先使用後端返回的詳細錯誤信息）
+        let error = errorData.error || errorData.message || 'Unknown error'
+        
+        // 如果是字符串，直接使用；如果是對象，提取message
+        if (typeof error === 'object' && error.message) {
+          error = error.message
+        }
+        
+        // 處理 429 錯誤（請求過於頻繁）
+        if (response.status === 429) {
+          shouldRetry = true
+          retryDelay = Math.min(baseDelay * Math.pow(2, 3 - retries), 30000) // 指數退避，最大30秒
           
-          // 處理 429 錯誤（請求過於頻繁）
-          if (response.status === 429) {
-            shouldRetry = true
-            retryDelay = Math.min(baseDelay * Math.pow(2, 3 - retries), 30000) // 指數退避，最大30秒
-            
-            if (error.includes('rate_limit_exceeded')) {
-              errorMessage = '⚠️ 請求過於頻繁，請稍後再試'
-            } else if (error.includes('quota') || error.includes('billing')) {
-              errorMessage = '⚠️ API 配額已用完，請聯繫管理員或稍後再試'
-              shouldRetry = false // 配額問題不重試
-            } else {
-              errorMessage = '⚠️ 請求頻率過高，請稍後再試'
-            }
-          } 
-          // 處理 5xx 服務器錯誤
-          else if (response.status >= 500) {
+          if (error.includes('rate_limit_exceeded')) {
+            errorMessage = '⚠️ 請求過於頻繁，請稍後再試'
+          } else if (error.includes('quota') || error.includes('billing')) {
+            errorMessage = '⚠️ API 配額已用完，請聯繫管理員或稍後再試'
+            shouldRetry = false // 配額問題不重試
+          } else {
+            errorMessage = `⚠️ 請求頻率過高：${error}`
+          }
+        } 
+        // 處理 500 服務器錯誤（API key未配置等）
+        else if (response.status === 500) {
+          if (error.includes('API key') || error.includes('not configured')) {
+            errorMessage = '⚠️ OpenAI API 金鑰未配置。請在 Vercel 環境變數中設置 OPENAI_API_KEY。'
+            shouldRetry = false // API key問題不重試
+          } else {
             shouldRetry = true
             retryDelay = baseDelay * (4 - retries)
-            errorMessage = '⚠️ 服務器暫時無法使用，正在重試...'
+            errorMessage = `⚠️ 服務器錯誤：${error}`
           }
-          // 其他錯誤
-          else {
-            errorMessage = `⚠️ ${error}`
-          }
+        }
+        // 處理其他 5xx 服務器錯誤
+        else if (response.status >= 500) {
+          shouldRetry = true
+          retryDelay = baseDelay * (4 - retries)
+          errorMessage = `⚠️ 服務器暫時無法使用：${error}`
+        }
+        // 處理 4xx 客戶端錯誤
+        else if (response.status >= 400) {
+          errorMessage = `⚠️ ${error}`
+        }
+        // 其他錯誤
+        else {
+          errorMessage = `⚠️ ${error}`
         }
       } catch (parseError) {
         console.error('Failed to parse error response:', parseError)
@@ -162,20 +181,22 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
           shouldRetry = true
           retryDelay = baseDelay * Math.pow(2, 3 - retries)
           errorMessage = '⚠️ 請求過於頻繁，請稍後再試'
+        } else if (response.status === 500) {
+          errorMessage = `⚠️ 伺服器內部錯誤 (${response.status})。請檢查 Vercel 日誌或聯繫管理員。`
         } else {
           errorMessage = `⚠️ 伺服器錯誤 (${response.status})，請稍後再試。`
         }
       }
       
       // 決定是否重試
-             if (shouldRetry && retries > 0) {
-               console.log(`API 錯誤 (${response.status})，${retryDelay/1000}秒後重試... (剩餘重試次數: ${retries})`)
-               await new Promise(resolve => setTimeout(resolve, retryDelay))
-               return callGPT(request, retries - 1)
-             }
-             
-             recordUsage('openai', false)
-             return errorMessage
+      if (shouldRetry && retries > 0) {
+        console.log(`API 錯誤 (${response.status})，${retryDelay/1000}秒後重試... (剩餘重試次數: ${retries})`)
+        await new Promise(resolve => setTimeout(resolve, retryDelay))
+        return callGPT(request, retries - 1)
+      }
+      
+      recordUsage('openai', false)
+      return errorMessage
     }
 
     let data: GPTResponse

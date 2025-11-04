@@ -34,7 +34,11 @@ module.exports = async (req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'OpenAI API key not configured' });
+      console.error('❌ OpenAI API key not configured');
+      return res.status(500).json({ 
+        error: 'OpenAI API key not configured',
+        message: 'Please configure OPENAI_API_KEY in Vercel environment variables'
+      });
     }
 
     const messages = [];
@@ -43,42 +47,89 @@ module.exports = async (req, res) => {
     }
     messages.push({ role: 'user', content: prompt });
 
+    // 記錄請求信息（不記錄完整內容以避免日誌過長）
+    console.log(`📤 Sending request to OpenAI:`, {
+      model,
+      messagesCount: messages.length,
+      promptLength: prompt.length,
+      systemPromptLength: systemPrompt ? systemPrompt.length : 0
+    });
+
+    const requestBody = {
+      model,
+      messages,
+      temperature: 0.7,
+      max_tokens: 4000, // 增加最大token數，確保答案更詳細
+      top_p: 0.9,
+      frequency_penalty: 0.3,
+      presence_penalty: 0.3
+    };
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 4000, // 增加最大token數，確保答案更詳細
-        top_p: 0.9,
-        frequency_penalty: 0.3,
-        presence_penalty: 0.3
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('OpenAI API error:', errorData);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        errorData = { 
+          error: { 
+            message: `HTTP ${response.status}: ${response.statusText}`,
+            type: 'unknown_error'
+          }
+        };
+      }
+      
+      console.error('❌ OpenAI API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
+
+      // 根據不同的錯誤類型返回更詳細的信息
+      let errorMessage = 'OpenAI API error';
+      if (errorData.error) {
+        if (errorData.error.message) {
+          errorMessage = errorData.error.message;
+        } else if (typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        }
+      }
+
       return res.status(response.status).json({ 
-        error: 'OpenAI API error', 
-        details: errorData 
+        error: errorMessage,
+        details: errorData,
+        status: response.status
       });
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content?.trim() || '⚠️ 無法取得回應';
 
+    console.log(`✅ Successfully received response from OpenAI (${content.length} characters)`);
+
     res.status(200).json({ content });
 
   } catch (error) {
-    console.error('GPT API proxy error:', error);
+    console.error('❌ GPT API proxy error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // 返回更詳細的錯誤信息
     res.status(500).json({ 
       error: 'Internal server error',
-      message: error.message 
+      message: error.message,
+      type: error.name || 'UnknownError',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
