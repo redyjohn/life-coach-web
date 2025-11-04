@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server.js",
-    "dev:full": "concurrently \"npm run server\" \"npm run dev\""
+    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
+    "test:api": "node test-api.js",
+    "test:api:local": "node test-api.js http://localhost:3000"
   },
   "dependencies": {
     "solarlunar": "^2.0.7",
