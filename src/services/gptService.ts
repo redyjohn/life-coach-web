@@ -127,6 +127,7 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
       try {
         const errorData = await response.json()
         console.error('GPT API error:', errorData)
+        console.error('Error details:', JSON.stringify(errorData, null, 2))
         
         // 提取錯誤訊息（優先使用後端返回的詳細錯誤信息）
         let error = errorData.error || errorData.message || 'Unknown error'
@@ -134,6 +135,15 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
         // 如果是字符串，直接使用；如果是對象，提取message
         if (typeof error === 'object' && error.message) {
           error = error.message
+        }
+        
+        // 如果是对象，尝试提取更多信息
+        if (typeof errorData === 'object') {
+          if (errorData.details?.error?.message) {
+            error = errorData.details.error.message
+          } else if (errorData.error && typeof errorData.error === 'string') {
+            error = errorData.error
+          }
         }
         
         // 處理 429 錯誤（請求過於頻繁）
