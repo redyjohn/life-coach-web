@@ -92,6 +92,24 @@ body, html, #app {
 
   .main-content {
     padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .content-wrapper {
+    padding-bottom: 60px; /* 調整底部廣告高度 */
+  }
+}
+
+/* 超小螢幕優化 */
+@media (max-width: 480px) {
+  .main-content {
+    padding: 12px;
+  }
+
+  .content-wrapper {
+    padding-bottom: 60px;
   }
 }
 </style>

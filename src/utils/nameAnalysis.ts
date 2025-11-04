@@ -12,6 +12,28 @@ export interface NameAnalysis {
   luck: string
   suggestions: string[]
   alternativeNames: string[]
+  userNeed?: string // 用戶需求
+}
+
+// 用戶需求類型
+export type UserNeed = 'career' | 'luck' | 'family' | 'health' | 'relationship'
+
+// 需求對應的中文描述
+export const needLabels: { [key in UserNeed]: string } = {
+  career: '事業遇到瓶頸',
+  luck: '改變運勢',
+  family: '家庭狀況',
+  health: '健康問題',
+  relationship: '人際關係'
+}
+
+// 需求對應的五行建議
+export const needFiveElements: { [key in UserNeed]: string[] } = {
+  career: ['火', '金'], // 事業需要熱情和專業
+  luck: ['木', '水'], // 運勢需要成長和靈活
+  family: ['土', '木'], // 家庭需要穩定和和諧
+  health: ['水', '土'], // 健康需要平衡和穩定
+  relationship: ['火', '木'] // 人際需要熱情和包容
 }
 
 // 五行對應表
@@ -38,31 +60,29 @@ const characterStrokes: { [key: string]: number } = {
   '傑': 12, '勇': 9, '濤': 18, '波': 8, '峰': 10, '山': 3, '海': 9, '天': 4, '宇': 6, '星': 9,
   '月': 4, '日': 4, '春': 9, '夏': 10, '秋': 9, '冬': 5, '東': 8, '西': 6, '南': 9, '北': 5,
   '中': 4, '正': 5, '義': 13, '信': 9, '仁': 4, '禮': 17, '智': 12, '慧': 15, '美': 9, '麗': 19,
-  '芳': 7, '香': 9, '花': 7, '草': 9, '樹': 16, '林': 8, '森': 12, '竹': 6, '梅': 11, '蘭': 20,
-  '菊': 11, '蓮': 13, '荷': 10, '桃': 10, '李': 7, '杏': 7, '梨': 11, '橘': 16, '橙': 16, '櫻': 21,
-  '楓': 13, '松': 8, '柏': 9, '柳': 9, '楊': 13, '槐': 14, '榆': 13, '桐': 10, '梓': 11, '楠': 13,
+  '芳': 7, '香': 9, '花': 7, '草': 9, '樹': 16, '森': 12, '竹': 6, '梅': 11, '蘭': 20,
+  '菊': 11, '蓮': 13, '荷': 10, '桃': 10, '杏': 7, '梨': 11, '橘': 16, '橙': 16, '櫻': 21,
+  '楓': 13, '松': 8, '柏': 9, '柳': 9, '槐': 14, '榆': 13, '桐': 10, '梓': 11, '楠': 13,
   '欣': 8, '悅': 10, '樂': 15, '歡': 22, '喜': 12, '愛': 13, '情': 11, '心': 4, '意': 13, '思': 9,
   '想': 13, '念': 8, '記': 10, '憶': 16, '夢': 13, '希': 7, '望': 11, '願': 19, '福': 13, '祿': 12,
   '壽': 14, '康': 11, '健': 11, '安': 6, '寧': 14, '靜': 16, '和': 8, '平': 5, '祥': 11, '瑞': 13,
   '吉': 6, '利': 7, '順': 12, '通': 10, '達': 16, '成': 6, '功': 5, '業': 13, '績': 17, '果': 8,
-  '實': 14, '真': 10, '善': 12, '美': 9, '好': 6, '優': 17, '秀': 7, '傑': 12, '出': 5, '眾': 11,
+  '善': 12, '優': 17, '秀': 7, '出': 5, '眾': 11,
   '超': 12, '越': 12, '進': 11, '步': 7, '發': 12, '展': 10, '開': 12, '拓': 8, '創': 12, '新': 13,
-  '立': 5, '足': 7, '穩': 19, '固': 8, '堅': 11, '強': 11, '硬': 12, '軟': 11, '輕': 14, '重': 9,
-  '大': 3, '小': 3, '高': 10, '低': 7, '長': 8, '短': 12, '寬': 15, '窄': 10, '厚': 9, '薄': 16,
+  '立': 5, '足': 7, '穩': 19, '固': 8, '堅': 11, '硬': 12, '軟': 11, '輕': 14, '重': 9,
   '深': 11, '淺': 11, '遠': 13, '近': 7, '快': 7, '慢': 14, '急': 9, '緩': 15, '早': 6, '晚': 11,
-  '新': 13, '舊': 18, '老': 6, '少': 4, '多': 6, '少': 4, '全': 6, '半': 5, '整': 16, '零': 13,
+  '舊': 18, '老': 6,
   '一': 1, '二': 2, '三': 3, '四': 5, '五': 4, '六': 4, '七': 2, '八': 2, '九': 2, '十': 2,
   '百': 6, '千': 3, '萬': 13, '億': 15, '兆': 6, '京': 8, '垓': 9, '秭': 9, '穰': 22, '溝': 13,
-  '澗': 15, '正': 5, '負': 6, '加': 5, '減': 11, '乘': 10, '除': 9, '等': 12, '於': 8, '是': 9,
-  '非': 8, '有': 6, '無': 12, '在': 6, '不': 4, '可': 5, '能': 10, '會': 13, '要': 9, '需': 14,
+  '澗': 15, '負': 6, '加': 5, '減': 11, '乘': 10, '除': 9, '等': 12, '於': 8, '是': 9,
+  '有': 6, '無': 12, '在': 6, '不': 4, '可': 5, '能': 10, '會': 13, '要': 9, '需': 14,
   '必': 5, '須': 12, '應': 17, '該': 13, '當': 13, '就': 12, '都': 11, '也': 3, '還': 16, '再': 6,
-  '又': 2, '更': 7, '最': 12, '很': 9, '太': 4, '極': 12, '非': 8, '常': 11, '特': 10, '別': 7,
-  '特': 10, '殊': 10, '奇': 8, '怪': 8, '異': 6, '同': 6, '相': 9, '似': 7, '像': 14, '如': 6,
-  '若': 8, '假': 11, '真': 10, '實': 14, '虛': 11, '空': 8, '滿': 14, '缺': 10, '完': 7, '整': 16,
-  '破': 10, '壞': 19, '好': 6, '壞': 19, '對': 14, '錯': 16, '正': 5, '反': 4, '前': 9, '後': 9,
-  '左': 5, '右': 5, '上': 3, '下': 3, '內': 4, '外': 5, '中': 4, '間': 12, '邊': 18, '角': 7,
-  '圓': 13, '方': 4, '長': 8, '短': 12, '粗': 11, '細': 11, '厚': 9, '薄': 16, '寬': 15, '窄': 10,
-  '高': 10, '低': 7, '大': 3, '小': 3, '多': 6, '少': 4, '全': 6, '半': 5, '整': 16, '零': 13
+  '又': 2, '更': 7, '最': 12, '很': 9, '太': 4, '極': 12, '常': 11, '別': 7,
+  '殊': 10, '奇': 8, '怪': 8, '異': 6, '同': 6, '相': 9, '似': 7, '像': 14, '如': 6,
+  '若': 8, '假': 11, '虛': 11, '空': 8, '滿': 14, '缺': 10, '完': 7,
+  '破': 10, '壞': 19, '對': 14, '錯': 16, '反': 4, '前': 9, '後': 9,
+  '左': 5, '右': 5, '上': 3, '下': 3, '內': 4, '外': 5, '間': 12, '邊': 18, '角': 7,
+  '圓': 13, '方': 4, '粗': 11, '細': 11
 }
 
 // 計算字符的筆畫數
@@ -190,8 +210,20 @@ export function generateSuggestions(fiveElements: string, name: string): string[
   return suggestions
 }
 
+// 根據需求生成合適的字符
+function getCharactersByNeed(need: UserNeed): string[] {
+  const needCharacters: { [key in UserNeed]: string[] } = {
+    career: ['成', '功', '業', '績', '達', '發', '展', '開', '拓', '創', '新', '進', '步', '超', '越', '強', '偉', '傑', '勇', '志'],
+    luck: ['福', '祿', '壽', '康', '健', '安', '寧', '靜', '和', '平', '祥', '瑞', '吉', '利', '順', '通', '達', '成', '功'],
+    family: ['和', '平', '安', '寧', '靜', '康', '健', '福', '祿', '壽', '祥', '瑞', '吉', '利', '順', '通', '達', '成', '功'],
+    health: ['康', '健', '安', '寧', '靜', '和', '平', '祥', '瑞', '吉', '利', '順', '通', '達', '成', '功'],
+    relationship: ['和', '平', '安', '寧', '靜', '康', '健', '福', '祿', '壽', '祥', '瑞', '吉', '利', '順', '通', '達', '成', '功']
+  }
+  return needCharacters[need] || needCharacters.career
+}
+
 // 生成替代姓名建議
-export function generateAlternativeNames(originalName: string, fiveElements: string): string[] {
+export function generateAlternativeNames(originalName: string, fiveElements: string, need?: UserNeed): string[] {
   const alternatives: string[] = []
   const surname = originalName[0]
   const givenName = originalName.slice(1)
@@ -200,12 +232,18 @@ export function generateAlternativeNames(originalName: string, fiveElements: str
   const suitableCharacters: { [key: string]: string[] } = {
     '木': ['林', '森', '樹', '竹', '梅', '蘭', '菊', '蓮', '荷', '桃', '李', '杏', '梨', '橘', '橙', '櫻', '楓', '松', '柏', '柳', '楊', '槐', '榆', '桐', '梓', '楠'],
     '火': ['明', '華', '建', '國', '文', '德', '志', '強', '偉', '軍', '傑', '勇', '濤', '波', '峰', '山', '海', '天', '宇', '星', '月', '日', '春', '夏', '秋', '冬'],
-    '土': ['中', '正', '義', '信', '仁', '禮', '智', '慧', '美', '麗', '芳', '香', '花', '草', '樹', '林', '森', '竹', '梅', '蘭', '菊', '蓮', '荷', '桃', '李', '杏'],
+    '土': ['中', '正', '義', '信', '仁', '禮', '智', '慧', '美', '麗', '芳', '香', '花', '草'],
     '金': ['金', '銀', '銅', '鐵', '鋼', '鋒', '銳', '利', '劍', '刀', '槍', '矛', '盾', '甲', '盔', '冠', '冕', '珠', '寶', '玉', '石', '鑽', '晶', '瑩', '亮', '光'],
     '水': ['水', '海', '江', '河', '湖', '池', '泉', '溪', '流', '波', '濤', '浪', '潮', '雨', '雪', '冰', '霜', '露', '霧', '雲', '風', '氣', '空', '天', '宇', '星']
   }
   
-  const characters = suitableCharacters[fiveElements] || suitableCharacters['土']
+  // 如果提供了需求，優先使用需求相關的字符
+  let characters = suitableCharacters[fiveElements] || suitableCharacters['土']
+  if (need) {
+    const needChars = getCharactersByNeed(need)
+    // 合併需求字符和五行字符，優先使用需求字符
+    characters = [...needChars, ...characters.filter(c => !needChars.includes(c))]
+  }
   
   // 生成3個替代姓名
   for (let i = 0; i < 3; i++) {
@@ -218,9 +256,22 @@ export function generateAlternativeNames(originalName: string, fiveElements: str
 }
 
 // 主要分析函數
-export function analyzeName(name: string, birthDate: string, birthPlace: string): NameAnalysis {
+export function analyzeName(name: string, birthDate: string, birthPlace: string, need?: UserNeed): NameAnalysis {
   const totalStrokes = calculateTotalStrokes(name)
   const fiveElements = getFiveElements(totalStrokes)
+  
+  // 根據需求調整建議
+  let suggestions = generateSuggestions(fiveElements, name)
+  if (need) {
+    const needSpecificSuggestions: { [key in UserNeed]: string[] } = {
+      career: ['建議選擇具有火或金屬性的姓名，有助於事業發展', '推薦使用象徵成功、進取的字', '適合在職場中使用積極向上的名字'],
+      luck: ['建議選擇具有木或水屬性的姓名，有助於提升運勢', '推薦使用象徵吉祥、順利的字', '適合在日常生活中使用帶來好運的名字'],
+      family: ['建議選擇具有土或木屬性的姓名，有助於家庭和諧', '推薦使用象徵和睦、安寧的字', '適合在家庭中使用帶來幸福的名字'],
+      health: ['建議選擇具有水或土屬性的姓名，有助於身體健康', '推薦使用象徵健康、康復的字', '適合在日常生活中使用帶來健康的名字'],
+      relationship: ['建議選擇具有火或木屬性的姓名，有助於人際關係', '推薦使用象徵和諧、友善的字', '適合在社交中使用帶來友誼的名字']
+    }
+    suggestions = [...needSpecificSuggestions[need], ...suggestions]
+  }
   
   return {
     name,
@@ -233,8 +284,9 @@ export function analyzeName(name: string, birthDate: string, birthPlace: string)
     health: getHealthAnalysis(fiveElements),
     relationships: getRelationshipAnalysis(fiveElements),
     luck: getLuckAnalysis(fiveElements),
-    suggestions: generateSuggestions(fiveElements, name),
-    alternativeNames: generateAlternativeNames(name, fiveElements)
+    suggestions,
+    alternativeNames: generateAlternativeNames(name, fiveElements, need),
+    userNeed: need
   }
 }
 

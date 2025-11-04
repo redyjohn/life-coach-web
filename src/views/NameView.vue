@@ -42,7 +42,7 @@
               required
             >
           </div>
-          
+
           <button type="submit" class="analyze-btn" :disabled="isAnalyzing">
             <span v-if="!isAnalyzing">🔮 開始分析</span>
             <span v-else>分析中...</span>
@@ -141,28 +141,52 @@
       </div>
     </div>
 
+    <!-- 需求提問區塊 -->
+    <div class="need-question-section" v-if="hasAnalyzed && analysisResult && !userNeedSelected">
+      <div class="question-card">
+        <h3>💭 您現在有遇到什麼困擾嗎？</h3>
+        <p class="question-description">
+          讓老師根據您的需求，為您提供更適合的改名建議
+        </p>
+        <div class="need-options">
+          <label 
+            v-for="(label, key) in needLabels" 
+            :key="key"
+            class="need-option"
+            :class="{ 'selected': selectedNeed === key }"
+            @click="selectNeed(key as UserNeed)"
+          >
+            <input 
+              type="radio" 
+              :value="key" 
+              v-model="selectedNeed"
+              :name="'userNeed'"
+            >
+            <span class="need-label-text">{{ label }}</span>
+          </label>
+        </div>
+        <button 
+          @click="submitNeed" 
+          class="submit-need-btn"
+          :disabled="!selectedNeed"
+        >
+          ✨ 提交需求，獲取改名建議
+        </button>
+      </div>
+    </div>
+
     <!-- 替代姓名建議 -->
-    <div class="alternative-section" v-if="hasAnalyzed && analysisResult">
+    <div class="alternative-section" v-if="hasAnalyzed && analysisResult && userNeedSelected && canViewAlternatives">
       <div class="alternative-card">
-        <h3>✨ 替代姓名建議</h3>
+        <h3>✨ 改名建議</h3>
         <p class="alternative-description">
-          根據您的五行屬性，我們為您推薦以下更適合的姓名：
+          根據您的需求「<strong>{{ needLabels[selectedNeed as UserNeed] }}</strong>」，我們為您推薦以下三個更適合的姓名：
         </p>
         
-        <!-- 廣告狀態提示 -->
-        <div class="ad-status">
-          <div class="status-indicator" :class="{ 'needs-ad': needsAd, 'free': !needsAd }">
-            {{ getStatusText }}
-          </div>
-          <div class="suggestion-counter">
-            已查看 {{ viewCount }} 次建議
-          </div>
-        </div>
-
         <!-- 替代姓名列表 -->
-        <div v-if="canViewAlternatives" class="alternative-names">
+        <div class="alternative-names">
           <div 
-            v-for="(name, index) in analysisResult.alternativeNames" 
+            v-for="(name, index) in alternativeNames" 
             :key="index"
             class="alternative-name-item"
           >
@@ -181,24 +205,34 @@
           </div>
         </div>
 
-        <!-- 查看建議按鈕 -->
-        <div v-if="!canViewAlternatives" class="view-suggestions-btn">
-          <button 
-            @click="viewAlternatives" 
-            :disabled="!canViewAlternatives"
-            class="suggestions-btn"
-            :class="{ 'needs-ad': needsAd }"
-          >
-            <span v-if="needsAd">🎬 觀看廣告後查看建議</span>
-            <span v-else>✨ 查看姓名建議</span>
-          </button>
+        <!-- 更多姓名選項詢問 -->
+        <div v-if="alternativeNames.length > 0 && canViewAlternatives" class="more-names-section">
+          <div class="more-names-card">
+            <h4>💡 還需要更多姓名選項嗎？</h4>
+            <p class="more-names-hint">
+              點擊下方按鈕，我們將根據您的需求為您推薦更多適合的姓名
+            </p>
+            <button 
+              @click="requestMoreNames" 
+              class="more-names-btn"
+              :disabled="isGeneratingMore || needsAd"
+              :class="{ 'needs-ad': needsAd }"
+            >
+              <span v-if="needsAd">🎬 觀看廣告後獲取更多改名建議</span>
+              <span v-else-if="!isGeneratingMore">✨ 獲取更多改名建議</span>
+              <span v-else>生成中...</span>
+            </button>
+            <p class="ad-hint" v-if="needsAd">
+              💡 獲取更多改名建議需要觀看廣告，這有助於我們提供更精準的姓名分析服務
+            </p>
+          </div>
         </div>
 
-        <!-- 廣告橫幅 -->
-        <div v-if="needsAd" class="ad-banner">
+        <!-- 更多姓名選項的廣告橫幅 -->
+        <div v-if="alternativeNames.length > 0 && needsAd && !canViewAlternatives" class="ad-banner">
           <div class="ad-content">
-            <h4>🎬 觀看廣告解鎖姓名建議</h4>
-            <p>為了提供更精準的姓名建議，請觀看廣告後查看推薦</p>
+            <h4>🎬 觀看廣告解鎖更多改名建議</h4>
+            <p>為了提供更多精準的改名建議，請觀看廣告後查看推薦</p>
             <div class="ad-placeholder">
               <div class="ad-box">
                 <div class="ad-text">🔗 廣告位（可替換成 AdSense）</div>
@@ -209,7 +243,28 @@
                 </div>
               </div>
             </div>
-            <button @click="handleAdClick" class="watch-ad-btn">
+            <button @click="handleAdClickAndGenerate" class="watch-ad-btn">
+              🎬 我已觀看廣告
+            </button>
+          </div>
+        </div>
+
+        <!-- 廣告橫幅 -->
+        <div v-if="userNeedSelected && needsAd && !canViewAlternatives" class="ad-banner">
+          <div class="ad-content">
+            <h4>🎬 觀看廣告解鎖改名建議</h4>
+            <p>為了提供更精準的改名建議，請觀看廣告後查看推薦</p>
+            <div class="ad-placeholder">
+              <div class="ad-box">
+                <div class="ad-text">🔗 廣告位（可替換成 AdSense）</div>
+                <div class="ad-features">
+                  <span>📱 手機廣告</span>
+                  <span>💻 桌面廣告</span>
+                  <span>🎯 精準投放</span>
+                </div>
+              </div>
+            </div>
+            <button @click="handleAdClickAndGenerate" class="watch-ad-btn">
               🎬 我已觀看廣告
             </button>
           </div>
@@ -221,7 +276,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { analyzeName, calculateTotalStrokes, getFiveElements, type NameAnalysis } from '@/utils/nameAnalysis'
+import { analyzeName as analyzeNameUtil, calculateTotalStrokes, getFiveElements, generateAlternativeNames, type NameAnalysis, type UserNeed, needLabels } from '@/utils/nameAnalysis'
 import { useAdGating } from '@/composables/useAdGating'
 
 // 使用統一的廣告 gating
@@ -246,6 +301,10 @@ const userData = ref({
 const hasAnalyzed = ref(false)
 const isAnalyzing = ref(false)
 const analysisResult = ref<NameAnalysis | null>(null)
+const selectedNeed = ref<UserNeed | ''>('')
+const userNeedSelected = ref(false)
+const alternativeNames = ref<string[]>([])
+const isGeneratingMore = ref(false)
 
 // 分析姓名
 async function analyzeName() {
@@ -259,10 +318,18 @@ async function analyzeName() {
     // 模擬分析過程
     await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // 進行姓名分析
-    analysisResult.value = analyzeName(userData.value.name, userData.value.birthDate, userData.value.birthPlace)
+    // 進行姓名分析（先不帶需求）
+    analysisResult.value = analyzeNameUtil(
+      userData.value.name, 
+      userData.value.birthDate, 
+      userData.value.birthPlace
+    )
     
     hasAnalyzed.value = true
+    // 重置需求選擇狀態
+    selectedNeed.value = ''
+    userNeedSelected.value = false
+    alternativeNames.value = []
   } catch (error) {
     console.error('姓名分析失敗:', error)
   } finally {
@@ -270,10 +337,112 @@ async function analyzeName() {
   }
 }
 
+// 選擇需求
+function selectNeed(need: UserNeed) {
+  selectedNeed.value = need
+}
+
+// 提交需求
+function submitNeed() {
+  if (!selectedNeed.value || !analysisResult.value) return
+  
+  userNeedSelected.value = true
+  
+  // 總是觸發廣告機制
+  // 如果不需要廣告，直接生成姓名建議
+  if (!needsAd.value) {
+    generateAlternativeNamesByNeed()
+  }
+  // 如果需要廣告，會顯示廣告橫幅，用戶點擊後才生成
+}
+
+// 處理廣告點擊並生成姓名
+async function handleAdClickAndGenerate() {
+  handleAdClick()
+  
+  // 設置生成狀態
+  isGeneratingMore.value = true
+  
+  try {
+    // 模擬生成過程
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 點擊廣告後生成姓名建議
+    if (alternativeNames.value.length === 0) {
+      // 第一次生成
+      generateAlternativeNamesByNeed()
+    } else {
+      // 生成更多
+      generateAlternativeNamesByNeed()
+    }
+  } catch (error) {
+    console.error('生成姓名失敗:', error)
+  } finally {
+    isGeneratingMore.value = false
+  }
+}
+
+// 根據需求生成姓名建議
+function generateAlternativeNamesByNeed() {
+  if (!analysisResult.value || !selectedNeed.value) return
+  
+  const fiveElements = analysisResult.value.fiveElements
+  const originalName = analysisResult.value.name
+  
+  // 使用工具函數生成替代姓名（3個）
+  const newNames = generateAlternativeNames(
+    originalName,
+    fiveElements,
+    selectedNeed.value as UserNeed
+  )
+  
+  // 如果是第一次生成，替換；如果是獲取更多，追加
+  if (alternativeNames.value.length === 0) {
+    alternativeNames.value = newNames
+  } else {
+    alternativeNames.value = [...alternativeNames.value, ...newNames]
+  }
+}
+
+// 請求更多姓名
+async function requestMoreNames() {
+  if (isGeneratingMore.value) return
+  
+  // 觸發廣告機制檢查
+  if (needsAd.value) {
+    // 如果需要廣告，顯示廣告橫幅（會自動顯示）
+    // 廣告橫幅會顯示，用戶點擊後調用 handleAdClickAndGenerate
+    return
+  }
+  
+  // 如果不需要廣告，直接生成
+  isGeneratingMore.value = true
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000)) // 模擬生成過程
+    generateAlternativeNamesByNeed()
+  } catch (error) {
+    console.error('生成更多姓名失敗:', error)
+  } finally {
+    isGeneratingMore.value = false
+  }
+}
+
+// 查看替代姓名建議
+function viewAlternatives() {
+  if (!canViewAlternatives.value) return
+  
+  handleViewAlternatives()
+  // 生成姓名建議
+  generateAlternativeNamesByNeed()
+}
+
 // 重置分析
 function resetAnalysis() {
   hasAnalyzed.value = false
   analysisResult.value = null
+  selectedNeed.value = ''
+  userNeedSelected.value = false
+  alternativeNames.value = []
   userData.value = {
     name: '',
     birthDate: '',
@@ -281,11 +450,6 @@ function resetAnalysis() {
   }
 }
 
-// 查看替代姓名建議
-function viewAlternatives() {
-  if (!canViewAlternatives.value) return
-  handleViewAlternatives()
-}
 
 // 獲取姓名描述
 function getNameDescription(name: string): string {
@@ -369,12 +533,187 @@ function getNameDescription(name: string): string {
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .form-group input:focus {
   outline: none;
   border-color: #8B5CF6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.required-hint {
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-weight: normal;
+}
+
+.need-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.need-option {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.need-option:hover {
+  border-color: #8B5CF6;
+  background: #f8f9ff;
+}
+
+.need-option.selected {
+  border-color: #8B5CF6;
+  background: #e7f3ff;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.need-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  cursor: pointer;
+  accent-color: #8B5CF6;
+}
+
+.need-label-text {
+  font-size: 1rem;
+  color: #2c3e50;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ad-hint {
+  color: #6b7280;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* 需求提問區塊 */
+.need-question-section {
+  margin-top: 30px;
+}
+
+.question-card {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 2px solid #8B5CF6;
+}
+
+.question-card h3 {
+  color: #2c3e50;
+  font-size: 1.8rem;
+  margin-bottom: 12px;
+  text-align: center;
+  border-bottom: 2px solid #8B5CF6;
+  padding-bottom: 10px;
+}
+
+.question-description {
+  color: #6b7280;
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.submit-need-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.submit-need-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.submit-need-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 更多姓名選項區塊 */
+.more-names-section {
+  margin-top: 30px;
+}
+
+.more-names-card {
+  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+  border: 2px solid #ffc107;
+  text-align: center;
+}
+
+.more-names-card h4 {
+  color: #856404;
+  font-size: 1.4rem;
+  margin-bottom: 12px;
+}
+
+.more-names-hint {
+  color: #856404;
+  font-size: 1rem;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.more-names-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.more-names-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+}
+
+.more-names-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.more-names-btn.needs-ad {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
+
+.more-names-btn.needs-ad:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .analyze-btn {
@@ -839,10 +1178,12 @@ function getNameDescription(name: string): string {
 @media (max-width: 768px) {
   .name-analysis {
     padding: 16px;
+    box-sizing: border-box;
   }
   
   .page-header {
     padding: 30px 16px;
+    box-sizing: border-box;
   }
   
   .page-header h1 {
@@ -851,6 +1192,21 @@ function getNameDescription(name: string): string {
   
   .input-card, .analyzing-card, .result-card, .alternative-card {
     padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .form-group {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .form-group input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
   }
   
   .mystical-circle {
@@ -865,11 +1221,13 @@ function getNameDescription(name: string): string {
   .basic-info {
     grid-template-columns: 1fr;
     gap: 15px;
+    box-sizing: border-box;
   }
   
   .alternative-name-item {
     flex-direction: column;
     text-align: center;
+    box-sizing: border-box;
   }
   
   .name-display {
@@ -881,6 +1239,47 @@ function getNameDescription(name: string): string {
     flex-direction: column;
     gap: 10px;
     text-align: center;
+    box-sizing: border-box;
+  }
+}
+
+/* 超小螢幕優化 */
+@media (max-width: 480px) {
+  .name-analysis {
+    padding: 12px;
+  }
+  
+  .page-header {
+    padding: 20px 12px;
+  }
+  
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .input-card, .analyzing-card, .result-card, .alternative-card {
+    padding: 16px;
+  }
+  
+  .form-group input {
+    padding: 10px;
+    font-size: 16px; /* 防止iOS自動縮放 */
+  }
+
+  .need-options {
+    grid-template-columns: 1fr;
+  }
+
+  .question-card {
+    padding: 20px;
+  }
+
+  .question-card h3 {
+    font-size: 1.5rem;
   }
 }
 </style>

@@ -433,6 +433,8 @@ function getDateDescription(date: string, event: string): string {
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.3s ease;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .form-group input:focus,
@@ -960,10 +962,12 @@ function getDateDescription(date: string, event: string): string {
 @media (max-width: 768px) {
   .date-selection {
     padding: 16px;
+    box-sizing: border-box;
   }
   
   .page-header {
     padding: 30px 16px;
+    box-sizing: border-box;
   }
   
   .page-header h1 {
@@ -972,6 +976,21 @@ function getDateDescription(date: string, event: string): string {
   
   .input-card, .analyzing-card, .result-card, .alternative-card {
     padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .form-group {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   .mystical-circle {
@@ -986,11 +1005,13 @@ function getDateDescription(date: string, event: string): string {
   .basic-info {
     grid-template-columns: 1fr;
     gap: 15px;
+    box-sizing: border-box;
   }
   
   .alternative-date-item {
     flex-direction: column;
     text-align: center;
+    box-sizing: border-box;
   }
   
   .date-display {
@@ -1002,6 +1023,36 @@ function getDateDescription(date: string, event: string): string {
     flex-direction: column;
     gap: 10px;
     text-align: center;
+    box-sizing: border-box;
+  }
+}
+
+/* 超小螢幕優化 */
+@media (max-width: 480px) {
+  .date-selection {
+    padding: 12px;
+  }
+  
+  .page-header {
+    padding: 20px 12px;
+  }
+  
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .input-card, .analyzing-card, .result-card, .alternative-card {
+    padding: 16px;
+  }
+  
+  .form-group input,
+  .form-group select {
+    padding: 10px;
+    font-size: 16px; /* 防止iOS自動縮放 */
   }
 }
 </style>

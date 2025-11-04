@@ -199,6 +199,8 @@ input {
   font-size: 1rem;
   transition: border-color 0.3s ease;
   background: #fafafa;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 input:focus {
@@ -292,10 +294,12 @@ input:focus {
 @media (max-width: 768px) {
   .bazi-form {
     padding: 16px;
+    box-sizing: border-box;
   }
   
   .page-header {
     padding: 30px 16px;
+    box-sizing: border-box;
   }
   
   .page-header h1 {
@@ -304,6 +308,20 @@ input:focus {
   
   .form-card, .features-section {
     padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .form-group {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   .features-grid {
@@ -313,6 +331,35 @@ input:focus {
   
   .feature-item {
     padding: 15px;
+    box-sizing: border-box;
+  }
+}
+
+/* 超小螢幕優化 */
+@media (max-width: 480px) {
+  .bazi-form {
+    padding: 12px;
+  }
+  
+  .page-header {
+    padding: 20px 12px;
+  }
+  
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .form-card, .features-section {
+    padding: 16px;
+  }
+  
+  input {
+    padding: 10px;
+    font-size: 16px; /* 防止iOS自動縮放 */
   }
 }
 </style>

@@ -472,14 +472,54 @@ const clearError = (field: string) => {
   .form-wrapper {
     margin: 10px;
     padding: 20px;
+    box-sizing: border-box;
+    width: calc(100% - 20px);
+    max-width: 100%;
   }
   
   .ziwei-form {
     padding: 20px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .form-group {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .form-input,
+  .form-select {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   
   .form-header h1 {
     font-size: 24px;
+  }
+}
+
+/* 超小螢幕優化 */
+@media (max-width: 480px) {
+  .form-wrapper {
+    margin: 5px;
+    padding: 16px;
+  }
+  
+  .ziwei-form {
+    padding: 16px;
+  }
+  
+  .form-header h1 {
+    font-size: 20px;
+  }
+  
+  .form-input,
+  .form-select {
+    padding: 10px;
+    font-size: 16px; /* 防止iOS自動縮放 */
   }
 }
 </style>
