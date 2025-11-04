@@ -15,7 +15,7 @@ app.use(express.json());
 // GPT API endpoint
 app.post('/api/gpt', async (req, res) => {
   try {
-    const { prompt, systemPrompt, model = 'gpt-4' } = req.body;
+    const { prompt, systemPrompt, model = 'gpt-3.5-turbo' } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });

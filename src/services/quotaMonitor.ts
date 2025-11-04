@@ -136,8 +136,13 @@ class QuotaMonitor {
         lastCheck: new Date()
       }
     } catch (error) {
-      console.error('OpenAI 配額檢查失敗:', error)
-      // 無法連接到後端，使用免費服務
+      // 在開發環境下，如果無法連接後端，靜默處理（不顯示錯誤）
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ 開發環境：後端服務未運行，請執行 "npm run server" 或使用 Vercel 部署')
+      } else {
+        console.error('OpenAI 配額檢查失敗:', error)
+      }
+      // 無法連接到後端，返回無配額狀態
       return {
         hasQuota: false,
         service: 'free',

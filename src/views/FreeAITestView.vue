@@ -207,7 +207,7 @@ async function testOpenAI() {
     const response = await callGPT({
       prompt: testQuestion.value,
       systemPrompt: systemPrompt.value,
-      model: 'gpt-4'
+      model: 'gpt-3.5-turbo'
     })
     
     testResult.value = {
@@ -241,7 +241,7 @@ async function testAuto() {
     const response = await callGPT({
       prompt: testQuestion.value,
       systemPrompt: systemPrompt.value,
-      model: 'gpt-4'
+      model: 'gpt-3.5-turbo'
     })
     
     testResult.value = {

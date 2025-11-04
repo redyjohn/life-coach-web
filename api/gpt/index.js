@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { prompt, systemPrompt, model = 'gpt-4' } = req.body;
+    const { prompt, systemPrompt, model = 'gpt-3.5-turbo' } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -53,7 +53,10 @@ module.exports = async (req, res) => {
         model,
         messages,
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 4000, // 增加最大token數，確保答案更詳細
+        top_p: 0.9,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.3
       })
     });
 
