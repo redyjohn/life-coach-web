@@ -103,6 +103,20 @@ module.exports = async (req, res) => {
         }
       }
 
+      // 特別處理 401 錯誤（無效的 API key）
+      if (response.status === 401) {
+        console.error('❌ Invalid OpenAI API key detected');
+        return res.status(401).json({ 
+          error: 'Invalid OpenAI API key',
+          message: 'The OpenAI API key is invalid, expired, or revoked. Please check your OPENAI_API_KEY in Vercel environment variables.',
+          details: {
+            error: errorData.error,
+            hint: 'API key should start with "sk-" and be valid. Check: https://platform.openai.com/account/api-keys'
+          },
+          status: 401
+        });
+      }
+
       return res.status(response.status).json({ 
         error: errorMessage,
         details: errorData,

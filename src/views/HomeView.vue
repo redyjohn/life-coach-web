@@ -1,5 +1,15 @@
 <template>
   <div class="home-page">
+    <!-- 瀏覽廣告（頂部橫幅） -->
+    <div class="browse-ad-banner">
+      <AdBanner 
+        type="browse" 
+        ad-label="瀏覽廣告"
+        @clicked="handleAdClick"
+        @viewed="handleBrowseAdViewed"
+      />
+    </div>
+
     <!-- 頁面標題 -->
     <div class="page-header">
       <h1>🔮 生命教練網 🔮</h1>
@@ -89,7 +99,26 @@
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import AdBanner from '@/components/AdBanner.vue'
+import { useAdRevenue } from '@/composables/useAdRevenue'
+
+const {
+  handleBrowseAdViewed: handleBrowseAdViewedBase,
+  handleAdClick: handleAdClickBase
+} = useAdRevenue()
+
+// 處理瀏覽廣告觀看
+const handleBrowseAdViewed = (viewTime: number) => {
+  handleBrowseAdViewedBase()
+}
+
+// 處理廣告點擊
+const handleAdClick = () => {
+  handleAdClickBase()
+}
+</script>
 
 <style scoped>
 .home-page {
@@ -99,6 +128,13 @@
   font-family: 'Microsoft JhengHei', sans-serif;
   background: linear-gradient(135deg, #f7f9fc 0%, #e8f4f8 100%);
   min-height: 100vh;
+  position: relative;
+}
+
+/* 瀏覽廣告橫幅 */
+.browse-ad-banner {
+  margin-bottom: 20px;
+  width: 100%;
 }
 
 /* 頁面標題 */

@@ -16,7 +16,7 @@
 
     <!-- 底部廣告欄 -->
     <footer class="ad-bottom">
-      <AdBanner />
+      <AdBanner type="browse" :custom-style="{ maxHeight: '60px', height: '60px' }" />
     </footer>
   </div>
 </template>
@@ -46,7 +46,7 @@ body, html, #app {
 .content-wrapper {
   display: flex;
   flex: 1;
-  padding-bottom: 100px; /* 預留底部廣告高度 */
+  padding-bottom: 70px; /* 預留底部廣告高度 */
 }
 
 /* 左側廣告欄 */
@@ -64,7 +64,7 @@ body, html, #app {
 .main-content {
   flex: 1;
   padding: 40px 60px;
-  min-height: calc(100vh - 120px); /* 為底部廣告預留空間 */
+  min-height: calc(100vh - 180px); /* 為底部廣告預留空間 */
 }
 
 /* 底部廣告欄 */
@@ -75,13 +75,39 @@ body, html, #app {
   right: 0;
   background: #f9f9f9;
   border-top: 1px solid #ddd;
-  padding: 8px;
-  height: 50px;
+  padding: 4px 8px;
+  height: 60px;
+  max-height: 60px;
   text-align: center;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.ad-bottom :deep(.ad-box) {
+  max-height: 52px !important;
+  height: 52px !important;
+  min-height: 52px !important;
+}
+
+.ad-bottom :deep(.ad-placeholder) {
+  padding: 4px 8px !important;
+  gap: 4px !important;
+}
+
+.ad-bottom :deep(.ad-icon) {
+  font-size: 1.2rem !important;
+}
+
+.ad-bottom :deep(.ad-label) {
+  font-size: 0.85rem !important;
+  margin-bottom: 2px !important;
+}
+
+.ad-bottom :deep(.ad-hint) {
+  font-size: 10px !important;
 }
 
 /* 響應式設計 */
@@ -98,7 +124,19 @@ body, html, #app {
   }
 
   .content-wrapper {
-    padding-bottom: 60px; /* 調整底部廣告高度 */
+    padding-bottom: 70px; /* 調整底部廣告高度 */
+  }
+  
+  .ad-bottom {
+    height: 60px;
+    max-height: 60px;
+    padding: 4px;
+  }
+  
+  .ad-bottom :deep(.ad-box) {
+    max-height: 52px !important;
+    height: 52px !important;
+    min-height: 52px !important;
   }
 }
 
@@ -109,7 +147,12 @@ body, html, #app {
   }
 
   .content-wrapper {
-    padding-bottom: 60px;
+    padding-bottom: 70px;
+  }
+  
+  .ad-bottom {
+    height: 60px;
+    max-height: 60px;
   }
 }
 </style>

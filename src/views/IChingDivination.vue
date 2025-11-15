@@ -68,29 +68,60 @@
       </div>
     </div>
 
-    <!-- 占卜進行中 -->
-    <div class="divination-section" v-if="hasStarted && !divinationComplete">
-      <div class="divination-card">
-        <h2>🔮 占卜師正在為您解卦</h2>
-        <div class="loading-animation">
-          <div class="mystical-circle">
-            <div class="yin-yang">
-              <div class="yin"></div>
-              <div class="yang"></div>
+    <!-- 抽籤動畫區域 -->
+    <div v-if="isDrawing" class="drawing-section">
+      <h2>☯️ 正在抽籤...</h2>
+      <div class="drawing-animation">
+        <div class="mystical-circle">
+          <div class="yin-yang">
+            <div class="yin"></div>
+            <div class="yang"></div>
+          </div>
+          <div class="hexagram-symbols">
+            <span class="symbol">☰</span>
+            <span class="symbol">☷</span>
+            <span class="symbol">☳</span>
+            <span class="symbol">☴</span>
+            <span class="symbol">☵</span>
+            <span class="symbol">☲</span>
+            <span class="symbol">☶</span>
+            <span class="symbol">☱</span>
+          </div>
+        </div>
+        <div class="drawing-text">占卜師正在為您抽取卦象</div>
+      </div>
+    </div>
+
+    <!-- 抽到的卦象 -->
+    <div v-if="drawnHexagram && !divinationComplete" class="hexagram-section">
+      <h2>☯️ 抽到的卦象</h2>
+      <div class="hexagram-display">
+        <div class="hexagram-info">
+          <h3>第{{ drawnHexagram.number }}卦：{{ drawnHexagram.chineseName }}卦</h3>
+          <p class="hexagram-name">{{ drawnHexagram.name }}</p>
+          <div class="hexagram-symbol-large">{{ drawnHexagram.symbol }}</div>
+          <p class="hexagram-description">{{ drawnHexagram.description }}</p>
+          <div class="hexagram-preview">
+            <div class="preview-item">
+              <h4>含義</h4>
+              <p>{{ drawnHexagram.meaning }}</p>
             </div>
-            <div class="hexagram-symbols">
-              <span class="symbol">☰</span>
-              <span class="symbol">☷</span>
-              <span class="symbol">☳</span>
-              <span class="symbol">☴</span>
-              <span class="symbol">☵</span>
-              <span class="symbol">☲</span>
-              <span class="symbol">☶</span>
-              <span class="symbol">☱</span>
+            <div class="preview-item">
+              <h4>關鍵詞</h4>
+              <div class="keywords">
+                <span v-for="keyword in drawnHexagram.keywords" :key="keyword" class="keyword-tag">
+                  {{ keyword }}
+                </span>
+              </div>
             </div>
           </div>
-          <p class="loading-text">正在為您抽取卦象...</p>
         </div>
+      </div>
+      <div class="hexagram-actions">
+        <button @click="getDivinationResult" class="interpret-btn" :disabled="isInterpreting">
+          <span v-if="isInterpreting">🔮 占卜師解讀中...</span>
+          <span v-else>🔮 開始解卦</span>
+        </button>
       </div>
     </div>
 
@@ -135,7 +166,7 @@
         <!-- AI 解讀 -->
         <div class="ai-interpretation" v-if="aiInterpretation">
           <h3>🧙‍♂️ 占卜師解讀</h3>
-          <div class="interpretation-text" v-html="aiInterpretation"></div>
+          <div class="interpretation-text" v-html="formattedInterpretation"></div>
         </div>
       </div>
     </div>
@@ -242,6 +273,8 @@ const userData = ref({
 
 const hasStarted = ref(false)
 const isLoading = ref(false)
+const isDrawing = ref(false)
+const isInterpreting = ref(false)
 const divinationComplete = ref(false)
 const drawnHexagram = ref<IChingHexagram | null>(null)
 const aiInterpretation = ref('')
@@ -278,22 +311,103 @@ const canAskQuestion = computed(() => {
   return userQuestion.value.trim() && !isAsking.value && canAsk.value
 })
 
+// 格式化解讀文本，確保每個編號分段清楚
+const formattedInterpretation = computed(() => {
+  if (!aiInterpretation.value) return ''
+  
+  let text = aiInterpretation.value
+  
+  // 先處理粗體標記（在分段之前）
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  
+  // 將 HTML 標籤轉換為純文本進行處理（保留換行）
+  if (typeof document !== 'undefined') {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = text
+    text = tempDiv.textContent || tempDiv.innerText || ''
+  } else {
+    // 服務端渲染時，簡單移除 HTML 標籤
+    text = text.replace(/<[^>]*>/g, '')
+  }
+  
+  // 處理各種編號格式，確保每個編號前都有明顯的分段
+  // 1. 處理數字編號（1. 2. 3. 或 1、2、3、）
+  text = text.replace(/(\n|^)(\d+[\.、]\s+)/g, '\n\n$2')
+  
+  // 2. 處理中文編號（一、二、三、）
+  text = text.replace(/(\n|^)([一二三四五六七八九十]+[、：]\s*)/g, '\n\n$2')
+  
+  // 3. 處理括號編號（(1) (2) (3)）
+  text = text.replace(/(\n|^)(\(\d+\)\s+)/g, '\n\n$2')
+  
+  // 4. 處理星號編號（* * *）
+  text = text.replace(/(\n|^)(\*\s+)/g, '\n\n$2')
+  
+  // 5. 處理破折號（- - -）
+  text = text.replace(/(\n|^)(-\s+)/g, '\n\n$2')
+  
+  // 6. 處理多個連續換行，統一為兩個換行（段落分隔）
+  text = text.replace(/\n{3,}/g, '\n\n')
+  
+  // 7. 移除開頭和結尾的多餘換行
+  text = text.trim()
+  
+  // 8. 將雙換行轉換為段落標籤
+  const paragraphs = text.split(/\n\n+/)
+  const formattedParagraphs = paragraphs
+    .map(p => p.trim())
+    .filter(p => p.length > 0)
+    .map(p => {
+      // 檢查是否以編號開頭（支持各種格式）
+      const trimmed = p.trim()
+      const isNumbered = /^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*\s+|-\s+)/.test(trimmed)
+      
+      // 重新處理粗體標記
+      let formattedP = p.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      
+      if (isNumbered) {
+        // 編號段落添加特殊樣式
+        // 確保編號部分使用粗體
+        formattedP = formattedP.replace(/^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*\s+|-\s+)(.+)/, '<strong>$1</strong>$2')
+        return `<p class="interpretation-paragraph numbered-paragraph">${formattedP}</p>`
+      } else {
+        return `<p class="interpretation-paragraph">${formattedP}</p>`
+      }
+    })
+  
+  return formattedParagraphs.join('')
+})
+
 // 開始占卜
 async function startDivination() {
   if (!userData.value.name || !userData.value.birthDate || !userData.value.question) {
     return
   }
 
+  // 重置狀態
   hasStarted.value = true
-  isLoading.value = true
+  isLoading.value = false
+  isDrawing.value = true
+  divinationComplete.value = false
+  drawnHexagram.value = null
+  aiInterpretation.value = ''
+  conversationHistory.value = []
 
-  try {
-    // 模擬占卜過程
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
+  // 開始抽籤動畫
+  setTimeout(() => {
     // 抽取卦象
     drawnHexagram.value = getRecommendedHexagram(userData.value.question)
-    
+    isDrawing.value = false
+  }, 3000)
+}
+
+// 獲取占卜結果（解卦）
+async function getDivinationResult() {
+  if (!drawnHexagram.value) return
+  
+  isInterpreting.value = true
+  
+  try {
     // 獲取 AI 解讀
     const interpretation = await getIChingDivination(
       userData.value.name,
@@ -313,14 +427,14 @@ async function startDivination() {
     // 初始占卜不計入提問次數，只有在後續提問時才計算廣告次數
     divinationComplete.value = true
   } catch (error) {
-    console.error('占卜過程出錯:', error)
-    // 即使 AI 失敗，也顯示卦象
+    console.error('解卦過程出錯:', error)
+    // 即使 AI 失敗，也顯示基本解讀
     if (drawnHexagram.value) {
       aiInterpretation.value = getHexagramInterpretation(drawnHexagram.value, userData.value.question)
       divinationComplete.value = true
     }
   } finally {
-    isLoading.value = false
+    isInterpreting.value = false
   }
 }
 
@@ -554,10 +668,30 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* 占卜動畫 */
-.loading-animation {
-  text-align: center;
+/* 抽籤動畫樣式 */
+.drawing-section {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 16px;
   padding: 40px;
+  margin-bottom: 30px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.drawing-section h2 {
+  color: #8B5CF6;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.drawing-animation {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
 }
 
 .mystical-circle {
@@ -570,7 +704,20 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: rotate 10s linear infinite;
+  animation: rotate 3s linear infinite;
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+}
+
+.drawing-text {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #8B5CF6;
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  white-space: nowrap;
 }
 
 .yin-yang {
@@ -631,6 +778,23 @@ onMounted(() => {
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* 卦象區域樣式 */
+.hexagram-section {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.hexagram-section h2 {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin: 0 0 20px 0;
+  border-left: 4px solid #8B5CF6;
+  padding-left: 12px;
+}
+
 /* 結果顯示 */
 .hexagram-display {
   text-align: center;
@@ -639,6 +803,64 @@ onMounted(() => {
   background: linear-gradient(135deg, #f8f9ff, #e8f4f8);
   border-radius: 12px;
   border: 2px solid #8B5CF6;
+}
+
+.hexagram-preview {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  text-align: left;
+}
+
+.preview-item {
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border-left: 4px solid #8B5CF6;
+}
+
+.preview-item h4 {
+  color: #8B5CF6;
+  font-size: 1rem;
+  margin: 0 0 8px 0;
+}
+
+.preview-item p {
+  color: #2c3e50;
+  line-height: 1.6;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.hexagram-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.interpret-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #8B5CF6, #7C3AED);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.interpret-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7C3AED, #6D28D9);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+}
+
+.interpret-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .hexagram-info h3 {
@@ -737,6 +959,72 @@ onMounted(() => {
   color: #856404;
   line-height: 1.8;
   font-size: 1.1rem;
+}
+
+.interpretation-text .interpretation-paragraph {
+  margin: 0 0 24px 0;
+  padding: 0;
+  line-height: 1.8;
+  color: #856404;
+}
+
+.interpretation-text .interpretation-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.interpretation-text .interpretation-paragraph:first-child {
+  margin-top: 0;
+}
+
+/* 編號段落樣式 - 每個編號都有明顯分隔 */
+.interpretation-text .numbered-paragraph {
+  margin-top: 28px;
+  margin-bottom: 24px;
+  padding-top: 20px;
+  padding-bottom: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-top: 2px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(248, 249, 255, 0.8));
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.interpretation-text .numbered-paragraph:first-child {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: none;
+}
+
+/* 編號樣式 */
+.interpretation-text .interpretation-paragraph strong {
+  color: #8B5CF6;
+  font-size: 1.1em;
+  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 12px;
+  margin-right: 8px;
+}
+
+.interpretation-text .numbered-paragraph strong {
+  color: #7C3AED;
+  font-size: 1.15em;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.interpretation-text .interpretation-paragraph em {
+  color: #7C3AED;
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* 確保編號後的內容有適當間距 */
+.interpretation-text .numbered-paragraph > strong + * {
+  margin-top: 12px;
 }
 
 .action-buttons {

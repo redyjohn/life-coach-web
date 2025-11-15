@@ -171,6 +171,16 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
             errorMessage = `⚠️ 服務器錯誤：${error}`
           }
         }
+        // 處理 401 錯誤（API key 無效）
+        else if (response.status === 401) {
+          if (error.includes('API key') || error.includes('invalid_api_key') || error.includes('Incorrect API key')) {
+            errorMessage = '⚠️ OpenAI API 金鑰無效或已過期。請在 Vercel 環境變數中更新 OPENAI_API_KEY。\n\n請檢查：\n1. API key 是否正確（格式：sk-...）\n2. API key 是否已過期或被撤銷\n3. 是否在正確的環境（Production/Preview/Development）中配置'
+            shouldRetry = false // API key 問題不重試
+          } else {
+            errorMessage = `⚠️ 身份驗證失敗：${error}`
+            shouldRetry = false
+          }
+        }
         // 處理其他 5xx 服務器錯誤
         else if (response.status >= 500) {
           shouldRetry = true
