@@ -1,0 +1,22 @@
+# robots.txt for 生命教練網
+
+User-agent: *
+Allow: /
+Disallow: /test/
+Disallow: /diagnostic
+Disallow: /api-test
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://life-coach-web.vercel.app/sitemap.xml
+
+# 允許搜索引擎索引主要頁面
+Allow: /
+Allow: /form
+Allow: /ziwei
+Allow: /divination
+Allow: /divination/tarot
+Allow: /divination/i-ching
+Allow: /name
+Allow: /calendar
+
