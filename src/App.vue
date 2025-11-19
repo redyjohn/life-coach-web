@@ -5,7 +5,10 @@
     <div class="content-wrapper">
       <!-- 左側廣告欄（桌面版） -->
       <aside class="ad-left">
-        <AdBanner />
+        <AdBanner 
+          type="persistent"
+          ad-label="側邊廣告"
+        />
       </aside>
 
       <!-- 主內容 -->
@@ -16,7 +19,11 @@
 
     <!-- 底部廣告欄 -->
     <footer class="ad-bottom">
-      <AdBanner type="browse" :custom-style="{ maxHeight: '60px', height: '60px' }" />
+      <AdBanner 
+        type="browse" 
+        ad-label="底部廣告"
+        :custom-style="{ maxHeight: '60px', height: '60px' }" 
+      />
     </footer>
   </div>
 </template>

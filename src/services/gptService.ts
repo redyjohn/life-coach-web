@@ -482,7 +482,7 @@ export async function getDayMasterAnalysis(userData: any): Promise<string> {
 用戶資料：
 ${JSON.stringify(userData, null, 2)}
 
-請提供詳細且深入的日主分析，整體至少600字以上，每個段落都要詳細說明，讓用戶感受到專業和用心。`
+請提供詳細且深入的日主分析，整體至少400字以上，每個段落都要詳細說明，讓用戶感受到專業和用心。`
   const reply = await callGPT({ prompt, systemPrompt })
   return addHumanTouch(reply)
 }

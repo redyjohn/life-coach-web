@@ -7,11 +7,11 @@
   >
     <!-- Google AdSense 廣告（如果已配置） -->
     <ins 
-      v-if="useAdSense && adSenseClientId"
+      v-if="useAdSense && adSenseClientId && adSenseClientId !== 'ca-pub-PLACEHOLDER'"
       class="adsbygoogle"
       :style="adSenseStyle"
       :data-ad-client="adSenseClientId"
-      :data-ad-slot="adSenseSlot"
+      :data-ad-slot="adSenseSlot || undefined"
       :data-ad-format="adFormat"
       :data-full-width-responsive="responsive"
     ></ins>
@@ -32,6 +32,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ADSENSE_CONFIG } from '@/config'
 
 interface Props {
   // 廣告類型
@@ -42,7 +43,7 @@ interface Props {
   showTimer?: boolean
   // 最小觀看時長（毫秒）
   minViewTime?: number
-  // Google AdSense 配置
+  // Google AdSense 配置（可選，如果不提供則從 config 讀取）
   useAdSense?: boolean
   adSenseClientId?: string
   adSenseSlot?: string
@@ -59,11 +60,27 @@ const props = withDefaults(defineProps<Props>(), {
   clickable: true,
   showTimer: false,
   minViewTime: 0,
-  useAdSense: false,
+  useAdSense: undefined, // undefined 表示從 config 讀取
   adFormat: 'auto',
   responsive: true,
   adLabel: '廣告位',
   customStyle: () => ({})
+})
+
+// 從配置中獲取 AdSense 設置
+const useAdSense = computed(() => {
+  return props.useAdSense !== undefined ? props.useAdSense : ADSENSE_CONFIG.enabled
+})
+
+const adSenseClientId = computed(() => {
+  return props.adSenseClientId || ADSENSE_CONFIG.clientId
+})
+
+const adSenseSlot = computed(() => {
+  if (props.adSenseSlot) return props.adSenseSlot
+  // 根據廣告類型從配置中獲取對應的 slot
+  const slotKey = props.type as keyof typeof ADSENSE_CONFIG.slots
+  return ADSENSE_CONFIG.slots[slotKey] || ''
 })
 
 const emit = defineEmits<{
@@ -141,15 +158,29 @@ const stopTimer = () => {
 
 // 初始化 Google AdSense
 const initAdSense = () => {
-  if (!props.useAdSense || !props.adSenseClientId) return
+  if (!useAdSense.value || !adSenseClientId.value || adSenseClientId.value === 'ca-pub-PLACEHOLDER') {
+    return
+  }
   
   // 確保 AdSense 腳本已加載
   if (typeof window !== 'undefined' && (window as any).adsbygoogle) {
     try {
-      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+      // 為每個廣告單元創建唯一的實例
+      const adElement = adContainerRef.value?.querySelector('.adsbygoogle')
+      if (adElement) {
+        ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({})
+        console.log('✅ AdSense 廣告已初始化:', { type: props.type, slot: adSenseSlot.value || 'auto' })
+      }
     } catch (e) {
-      console.error('AdSense initialization error:', e)
+      console.error('❌ AdSense initialization error:', e)
     }
+  } else {
+    // 如果 AdSense 腳本尚未加載，稍後重試
+    setTimeout(() => {
+      if ((window as any).adsbygoogle) {
+        initAdSense()
+      }
+    }, 500)
   }
 }
 
@@ -181,11 +212,11 @@ onMounted(() => {
   }
   
   // 初始化 AdSense
-  if (props.useAdSense) {
+  if (useAdSense.value) {
     // 延遲初始化，確保 AdSense 腳本已加載
     setTimeout(() => {
       initAdSense()
-    }, 100)
+    }, 300)
   }
 })
 
