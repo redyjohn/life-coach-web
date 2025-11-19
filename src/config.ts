@@ -12,11 +12,12 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 // 获取方式: https://www.google.com/adsense -> 账户 -> 账户信息 -> 发布商 ID
 export const ADSENSE_CONFIG = {
   // 是否启用 AdSense (设置为 false 时显示占位符)
-  enabled: import.meta.env.VITE_ADSENSE_ENABLED === 'true',
+  // 默认启用，如果环境变量设置为 'false' 则禁用
+  enabled: import.meta.env.VITE_ADSENSE_ENABLED !== 'false',
   
   // AdSense Publisher ID (从环境变量或直接设置)
   // 格式: ca-pub-xxxxxxxxxxxxxxxx
-  clientId: import.meta.env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-PLACEHOLDER',
+  clientId: import.meta.env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-4218582490253078',
   
   // 不同广告位的 Slot ID (可选，如果不设置则使用自动广告)
   slots: {
