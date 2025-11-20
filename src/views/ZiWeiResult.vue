@@ -23,6 +23,7 @@ interface QuestionHistoryItem {
 interface SectionContent {
   title: string
   text: string
+  formattedText?: string
   show: boolean
   loading?: boolean
 }
@@ -87,14 +88,87 @@ const defaultFallbackReply = '🙇‍♂️ 非常抱歉，您所提的問題無
 
 // 響應式的內容數組 - 控制區塊顯示和載入狀態
 const sectionContents = computed<SectionContent[]>(() => [
-  { title: '一、紫微命盤', text: ziWeiChart.value, show: sectionVisibility.value.ziWeiChart, loading: loadingStates.value.ziWeiChart },
-  { title: '二、命盤分析', text: ziWeiAnalysis.value, show: sectionVisibility.value.ziWeiAnalysis, loading: loadingStates.value.ziWeiAnalysis },
-  { title: '三、流年運勢', text: annualLuck.value, show: sectionVisibility.value.annualLuck, loading: loadingStates.value.annualLuck },
-  { title: '四、大限運勢', text: decadeLuck.value, show: sectionVisibility.value.decadeLuck, loading: loadingStates.value.decadeLuck }
+  { title: '一、紫微命盤', text: ziWeiChart.value, formattedText: formattedZiWeiChart.value, show: sectionVisibility.value.ziWeiChart, loading: loadingStates.value.ziWeiChart },
+  { title: '二、命盤分析', text: ziWeiAnalysis.value, formattedText: formattedZiWeiAnalysis.value, show: sectionVisibility.value.ziWeiAnalysis, loading: loadingStates.value.ziWeiAnalysis },
+  { title: '三、流年運勢', text: annualLuck.value, formattedText: formattedAnnualLuck.value, show: sectionVisibility.value.annualLuck, loading: loadingStates.value.annualLuck },
+  { title: '四、大限運勢', text: decadeLuck.value, formattedText: formattedDecadeLuck.value, show: sectionVisibility.value.decadeLuck, loading: loadingStates.value.decadeLuck }
 ])
 
 // 需要使用 pre 標籤的索引
 const preTagIndexes = [0]
+
+// 格式化文本內容，確保清晰分段
+function formatTextContent(text: string): string {
+  if (!text) return ''
+  
+  let formatted = text
+  
+  // 先處理粗體標記（在分段之前）
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  
+  // 將 HTML 標籤轉換為純文本進行處理（保留換行）
+  if (typeof document !== 'undefined') {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = formatted
+    formatted = tempDiv.textContent || tempDiv.innerText || ''
+  } else {
+    // 服務端渲染時，簡單移除 HTML 標籤
+    formatted = formatted.replace(/<[^>]*>/g, '')
+  }
+  
+  // 處理各種編號格式，確保每個編號前都有明顯的分段
+  // 1. 處理數字編號（1. 2. 3. 或 1、2、3、）
+  formatted = formatted.replace(/(\n|^)(\d+[\.、]\s+)/g, '\n\n$2')
+  
+  // 2. 處理中文編號（一、二、三、）
+  formatted = formatted.replace(/(\n|^)([一二三四五六七八九十]+[、：]\s*)/g, '\n\n$2')
+  
+  // 3. 處理括號編號（(1) (2) (3)）
+  formatted = formatted.replace(/(\n|^)(\(\d+\)\s+)/g, '\n\n$2')
+  
+  // 4. 處理星號編號（* * *）
+  formatted = formatted.replace(/(\n|^)(\*\s+)/g, '\n\n$2')
+  
+  // 5. 處理破折號編號（- - -）
+  formatted = formatted.replace(/(\n|^)(-\s+)/g, '\n\n$2')
+  
+  // 6. 處理特殊標題格式（**標題**）
+  formatted = formatted.replace(/(\n|^)(\*\*[^*]+\*\*)/g, '\n\n$2')
+  
+  // 7. 處理多個連續換行，統一為兩個換行
+  formatted = formatted.replace(/\n{3,}/g, '\n\n')
+  
+  // 8. 處理段落開頭的空白
+  formatted = formatted.replace(/^\s+/gm, '')
+  
+  // 將文本分割成段落
+  const paragraphs = formatted.split(/\n\n+/).filter(p => p.trim().length > 0)
+  
+  // 為每個段落添加 HTML 標籤和樣式
+  const formattedParagraphs = paragraphs.map(paragraph => {
+    const trimmedP = paragraph.trim()
+    
+    // 檢查是否為編號段落（包含數字、中文編號、括號編號、星號、破折號等）
+    const isNumbered = /^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*|-|\*\*)/.test(trimmedP)
+    
+    // 重新添加粗體標記（因為之前被移除了）
+    let formattedP = trimmedP.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    
+    if (isNumbered) {
+      return `<p class="ziwei-paragraph numbered-paragraph">${formattedP}</p>`
+    } else {
+      return `<p class="ziwei-paragraph">${formattedP}</p>`
+    }
+  })
+  
+  return formattedParagraphs.join('')
+}
+
+// 為每個部分創建格式化後的計算屬性
+const formattedZiWeiChart = computed(() => formatTextContent(ziWeiChart.value))
+const formattedZiWeiAnalysis = computed(() => formatTextContent(ziWeiAnalysis.value))
+const formattedAnnualLuck = computed(() => formatTextContent(annualLuck.value))
+const formattedDecadeLuck = computed(() => formatTextContent(decadeLuck.value))
 
 // 農曆資訊解析
 const lunarInfo = ref({})
@@ -457,6 +531,7 @@ function getRandomHint(): string {
           <!-- 內容顯示 -->
           <template v-else>
             <pre v-if="preTagIndexes.includes(index)" class="pre-content">{{ content.text }}</pre>
+            <div v-else-if="content.formattedText" class="formatted-content" v-html="content.formattedText"></div>
             <p v-else class="paragraph-content">{{ content.text }}</p>
           </template>
           </div>
@@ -656,6 +731,68 @@ h2 {
   line-height: 1.8;
   color: #333;
   margin: 0;
+}
+
+/* 格式化內容樣式 */
+.formatted-content {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-content .ziwei-paragraph {
+  margin: 16px 0;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-content .numbered-paragraph {
+  margin-top: 28px;
+  margin-bottom: 24px;
+  padding-top: 20px;
+  padding-bottom: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-top: 2px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(248, 249, 255, 0.8));
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.formatted-content .numbered-paragraph:first-child {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: none;
+}
+
+.formatted-content .ziwei-paragraph strong {
+  color: #8B5CF6;
+  font-size: 1.1em;
+  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 8px;
+  margin-right: 8px;
+}
+
+.formatted-content .numbered-paragraph strong {
+  color: #7C3AED;
+  font-size: 1.15em;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.formatted-content .ziwei-paragraph em {
+  color: #7C3AED;
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* 確保編號後的內容有適當間距 */
+.formatted-content .numbered-paragraph > strong + * {
+  margin-top: 12px;
 }
 
 .pre-content {
