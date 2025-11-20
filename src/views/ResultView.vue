@@ -26,6 +26,7 @@ interface QuestionHistoryItem {
 interface SectionContent {
   title: string
   text: string
+  formattedText?: string
   show: boolean
   loading?: boolean
 }
@@ -99,16 +100,70 @@ const defaultFallbackReply = '🙇‍♂️ 非常抱歉，您所提的問題無
 // 響應式的內容數組 - 控制區塊顯示和載入狀態
 const sectionContents = computed<SectionContent[]>(() => [
   { title: '一、個人八字（四柱）', text: baZi.value, show: sectionVisibility.value.baZi, loading: loadingStates.value.baZi },
-  { title: '二、日主分析', text: dayMaster.value, show: sectionVisibility.value.dayMaster, loading: loadingStates.value.dayMaster },
+  { title: '二、日主分析', text: dayMaster.value, formattedText: formattedDayMaster.value, show: sectionVisibility.value.dayMaster, loading: loadingStates.value.dayMaster },
   { title: '三、命盤分析', text: chartAnalysis.value, show: sectionVisibility.value.chartAnalysis, loading: loadingStates.value.chartAnalysis },
-  { title: '四、命理建議', text: suggestion.value, show: sectionVisibility.value.suggestion, loading: loadingStates.value.suggestion },
+  { title: '四、命理建議', text: suggestion.value, formattedText: formattedSuggestion.value, show: sectionVisibility.value.suggestion, loading: loadingStates.value.suggestion },
   { title: '五、大運列表', text: luckCycle.value, show: sectionVisibility.value.luckCycle, loading: loadingStates.value.luckCycle },
-  { title: '六、今年流年分析', text: currentLuck.value, show: sectionVisibility.value.currentLuck, loading: loadingStates.value.currentLuck },
-  { title: '七、流年建議', text: yearAdvice.value, show: sectionVisibility.value.yearAdvice, loading: loadingStates.value.yearAdvice }
+  { title: '六、今年流年分析', text: currentLuck.value, formattedText: formattedCurrentLuck.value, show: sectionVisibility.value.currentLuck, loading: loadingStates.value.currentLuck },
+  { title: '七、流年建議', text: yearAdvice.value, formattedText: formattedYearAdvice.value, show: sectionVisibility.value.yearAdvice, loading: loadingStates.value.yearAdvice }
 ])
 
 // 需要使用 pre 標籤的索引
 const preTagIndexes = [0, 2, 4]
+
+// 格式化文本內容，確保清晰分段
+function formatTextContent(text: string): string {
+  if (!text) return ''
+  
+  let formatted = text
+  
+  // 先處理粗體標記（在分段之前）
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  
+  // 將 HTML 標籤轉換為純文本進行處理（保留換行）
+  if (typeof document !== 'undefined') {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = formatted
+    formatted = tempDiv.textContent || tempDiv.innerText || ''
+  } else {
+    // 服務端渲染時，簡單移除 HTML 標籤
+    formatted = formatted.replace(/<[^>]*>/g, '')
+  }
+  
+  // 處理各種編號格式，確保每個編號前都有明顯的分段
+  formatted = formatted.replace(/(\n|^)(\d+[\.、]\s+)/g, '\n\n$2')
+  formatted = formatted.replace(/(\n|^)([一二三四五六七八九十]+[、：]\s*)/g, '\n\n$2')
+  formatted = formatted.replace(/(\n|^)(\(\d+\)\s+)/g, '\n\n$2')
+  formatted = formatted.replace(/(\n|^)(\*\s+)/g, '\n\n$2')
+  formatted = formatted.replace(/(\n|^)(-\s+)/g, '\n\n$2')
+  formatted = formatted.replace(/(\n|^)(\*\*[^*]+\*\*)/g, '\n\n$2')
+  formatted = formatted.replace(/\n{3,}/g, '\n\n')
+  formatted = formatted.replace(/^\s+/gm, '')
+  
+  // 將文本分割成段落
+  const paragraphs = formatted.split(/\n\n+/).filter(p => p.trim().length > 0)
+  
+  // 為每個段落添加 HTML 標籤和樣式
+  const formattedParagraphs = paragraphs.map(paragraph => {
+    const trimmedP = paragraph.trim()
+    const isNumbered = /^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*|-|\*\*)/.test(trimmedP)
+    let formattedP = trimmedP.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    
+    if (isNumbered) {
+      return `<p class="bazi-paragraph numbered-paragraph">${formattedP}</p>`
+    } else {
+      return `<p class="bazi-paragraph">${formattedP}</p>`
+    }
+  })
+  
+  return formattedParagraphs.join('')
+}
+
+// 為每個部分創建格式化後的計算屬性
+const formattedDayMaster = computed(() => formatTextContent(dayMaster.value))
+const formattedSuggestion = computed(() => formatTextContent(suggestion.value))
+const formattedCurrentLuck = computed(() => formatTextContent(currentLuck.value))
+const formattedYearAdvice = computed(() => formatTextContent(yearAdvice.value))
 
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
@@ -477,6 +532,7 @@ function getRandomHint(): string {
           <!-- 內容顯示 -->
           <template v-else>
             <pre v-if="preTagIndexes.includes(index)" class="pre-content">{{ content.text }}</pre>
+            <div v-else-if="content.formattedText" class="formatted-content" v-html="content.formattedText"></div>
             <p v-else class="paragraph-content">{{ content.text }}</p>
           </template>
         </div>
