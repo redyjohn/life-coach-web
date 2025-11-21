@@ -277,7 +277,8 @@ function addHumanTouch(text: string): string {
   const intro = intros[Math.floor(Math.random() * intros.length)]
   const transition = transitions[Math.floor(Math.random() * transitions.length)]
 
-  return `${intro}\n${transition}\n\n${text}`
+  const enhancedText = `${intro}\n${transition}\n\n${text}`
+  return enhancedText.replace(/([。！？])/g, '$1\n\n');
 }
 
 /**
