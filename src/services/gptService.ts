@@ -3,8 +3,7 @@
 // 命理老師專用 GPT 呼叫服務（擬真互動強化版）
 // ===============================
 
-import { callFreeAI, shouldUseFreeService as checkFreeQuota } from './freeAIService'
-import { getQuotaStatus, recordAPIUsage as recordUsage } from './quotaMonitor'
+import { recordAPIUsage as recordUsage } from './quotaMonitor'
 import { API_BASE_URL as configApiUrl } from '@/config'
 
 interface GPTRequest {
@@ -258,27 +257,62 @@ export async function callGPT(request: GPTRequest, retries: number = 3): Promise
 /**
  * 擬真人性化表達 — 自然語氣開場與過渡語
  */
-function addHumanTouch(text: string): string {
+function addHumanTouch(text: string, style: 'professional' | 'casual' = 'professional'): string {
   const intros = [
     '嗯…這個命盤挺有意思，',
-    '老師看命多年，這格局蠻特別的，',
-    '從命理的角度來看，',
-    '這個八字命盤透露出一種很獨特的氣質，',
-    '仔細一看，命盤的能量蠻明顯的，'
+    '老師剛才仔細看了一下，',
+    '從您提供的信息來看，',
+    '先別急，讓我為您起個卦，',
+    '這是一個很有挑戰性的問題，'
   ]
 
   const transitions = [
     '接下來我們細看一下重點部分：',
-    '我來幫你整理出命盤中幾個關鍵方向：',
-    '從這裡可以看出幾個特別值得注意的現象：',
-    '整體上來說，命盤給的訊息是這樣的：'
+    '請您耐心聽我道來：',
+    '我們從幾個方面來深入分析：',
+    '我將分點條列，為您做詳細的解讀：'
   ]
 
-  const intro = intros[Math.floor(Math.random() * intros.length)]
-  const transition = transitions[Math.floor(Math.random() * transitions.length)]
+  const casualIntros = [
+    '嘿，讓我來給你解讀一下！',
+    '沒問題，馬上告訴你答案！',
+    '這問題很有趣，我來幫你看！'
+  ]
 
-  const enhancedText = `${intro}\n${transition}\n\n${text}`
-  return enhancedText.replace(/([。！？])/g, '$1\n\n');
+  const casualTransitions = [
+    '來看看結果：',
+    '以下是你的專屬分析：'
+  ]
+
+  const selectedIntros = style === 'professional' ? intros : casualIntros;
+  const selectedTransitions = style === 'professional' ? transitions : casualTransitions;
+
+  const intro = selectedIntros[Math.floor(Math.random() * selectedIntros.length)]
+  const transition = selectedTransitions[Math.floor(Math.random() * selectedTransitions.length)]
+
+  // 1. 在開頭加入人性化語句
+  let enhancedText = `${intro}\n${transition}\n\n${text}`
+
+  // 2. 強化分段邏輯：確保結構性標記前後有明確換行
+
+  // a. 將中文句號/問號/驚嘆號後添加雙換行符 (保留原有功能)
+  enhancedText = enhancedText.replace(/([。！？])/g, '$1\n\n');
+
+  // b. 將潛在的結構性分隔符號（如###、-、以及中文或英文編號）前後加上雙換行符
+  //    這個步驟處理您圖片中看到的 '###' 和清單項目 '-'
+  //    匹配：換行/開頭 + 任意空格 + (### 或 ** 或 數字. 或 數字、 或 中文編號、/： 或 - )
+  enhancedText = enhancedText.replace(/(\n|^)\s*([#\-]{2,}|[\d]+[\.、]\s*|[\u4e00-\u9fa5]+[、：]\s*|\s\-\s|\*\*)/g, '\n\n$2');
+  
+  // c. 將連續多個 \n 縮減為 \n\n，避免過多空行
+  enhancedText = enhancedText.replace(/\n{3,}/g, '\n\n');
+
+  // d. 將單個 \n 替換為空格，避免它被 formatTextContent 誤判為 <p>，這通常不是最佳做法，
+  //    但由於您的 formatTextContent 依賴 \n\n 來創建 <p>，我們確保單個 \n 不會干擾。
+
+  // 3. 清理多餘的開頭/結尾換行
+  enhancedText = enhancedText.trim();
+  
+  return enhancedText;
 }
 
 /**
@@ -441,6 +475,7 @@ ${JSON.stringify(userData, null, 2)}
    - 必須精準回答用戶問題，直接針對核心需求
    - 嚴禁使用空泛、模糊、敷衍的文字
    - 必須提供具體、可操作的內容
+   - **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
    
    如果任何段落超過100字，請重新組織語言，確保每個段落都在100字以內。
 
@@ -498,6 +533,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何段落超過100字，請重新組織語言，確保每個段落都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -527,6 +563,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何段落超過100字，請重新組織語言，確保每個段落都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -564,6 +601,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何建議超過100字，請重新組織語言，確保每個建議都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -604,6 +642,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何分析點超過100字，請重新組織語言，確保每個分析點都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -657,6 +696,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準符合用戶需求，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何分析點超過100字，請重新組織語言，確保每個分析點都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -707,6 +747,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何建議超過100字，請重新組織語言，確保每個建議都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -756,6 +797,7 @@ export async function getZiWeiAnalysis(userData: any): Promise<string> {
 3. 必須精準符合用戶需求，直接針對問題核心
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 用戶資料：
 ${JSON.stringify(userData, null, 2)}
@@ -766,6 +808,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何段落超過100字，請重新組織語言，確保每個段落都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -826,6 +869,7 @@ export async function getZiWeiAnnualLuck(userData: any): Promise<string> {
 3. 必須精準符合用戶需求，直接針對問題核心
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 用戶資料：
 ${JSON.stringify(userData, null, 2)}
@@ -836,6 +880,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何分析點超過100字，請重新組織語言，確保每個分析點都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -880,6 +925,7 @@ export async function getZiWeiDecadeLuck(userData: any): Promise<string> {
 3. 必須精準符合用戶需求，直接針對問題核心
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 用戶資料：
 ${JSON.stringify(userData, null, 2)}
@@ -890,6 +936,7 @@ ${JSON.stringify(userData, null, 2)}
 3. 必須精準回答用戶問題，直接針對核心需求
 4. 嚴禁使用空泛、模糊、敷衍的文字
 5. 必須提供具體、可操作的內容
+6. **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**
 
 如果任何分析點超過100字，請重新組織語言，確保每個分析點都在100字以內。`
   const reply = await callGPT({ prompt, systemPrompt })
@@ -986,7 +1033,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
@@ -1055,7 +1103,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
@@ -1124,7 +1173,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
@@ -1193,7 +1243,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
@@ -1262,7 +1313,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
@@ -1331,7 +1383,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
@@ -1382,7 +1435,8 @@ ${question}
 - 每個分析段落都要詳細說明100字以內，必須精準符合用戶需求，不敷衍，不使用空泛文字
 - 每個段落控制在100字以內，精準回答
 - 內容要專業、詳細、不隨便，精準回答用戶問題，不使用空泛文字，直接針對核心需求
-- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉`
+- 每個分析點都要有充分的解釋和論證，不能只是簡單列舉
+- **請在每個段落之間使用空行 (兩個換行符 \n\n) 進行分隔，以確保清晰排版**`
 
   return callGPT({ prompt, systemPrompt })
 }
