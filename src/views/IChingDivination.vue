@@ -197,7 +197,7 @@
         <div class="answer-item">
           <strong>🔮 占卜師解答：</strong>
           <div class="answer-content">
-            <pre>{{ chat.answer }}</pre>
+            <div class="formatted-gpt-answer" v-html="formatTextContent(chat.answer)"></div>
           </div>
         </div>
       </div>
@@ -310,6 +310,73 @@ const quickQuestions = ref([
 const canAskQuestion = computed(() => {
   return userQuestion.value.trim() && !isAsking.value && canAsk.value
 })
+
+// 格式化文本內容，確保清晰分段
+function formatTextContent(text: string): string {
+  if (!text) return ''
+  
+  let formatted = text
+  
+  // 先處理粗體標記（在分段之前）
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  
+  // 將 HTML 標籤轉換為純文本進行處理（保留換行）
+  if (typeof document !== 'undefined') {
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = formatted
+    formatted = tempDiv.textContent || tempDiv.innerText || ''
+  } else {
+    // 服務端渲染時，簡單移除 HTML 標籤
+    formatted = formatted.replace(/<[^>]*>/g, '')
+  }
+  
+  // 處理各種編號格式，確保每個編號前都有明顯的分段
+  // 1. 處理數字編號（1. 2. 3. 或 1、2、3、）
+  formatted = formatted.replace(/(\n|^)(\d+[\.、]\s+)/g, '\n\n$2')
+  
+  // 2. 處理中文編號（一、二、三、）
+  formatted = formatted.replace(/(\n|^)([一二三四五六七八九十]+[、：]\s*)/g, '\n\n$2')
+  
+  // 3. 處理括號編號（(1) (2) (3)）
+  formatted = formatted.replace(/(\n|^)(\(\d+\)\s+)/g, '\n\n$2')
+  
+  // 4. 處理星號編號（* * *）
+  formatted = formatted.replace(/(\n|^)(\*\s+)/g, '\n\n$2')
+  
+  // 5. 處理破折號編號（- - -）
+  formatted = formatted.replace(/(\n|^)(-\s+)/g, '\n\n$2')
+  
+  // 6. 處理特殊標題格式（**標題**）
+  formatted = formatted.replace(/(\n|^)(\*\*[^*]+\*\*)/g, '\n\n$2')
+  
+  // 7. 處理多個連續換行，統一為兩個換行
+  formatted = formatted.replace(/\n{3,}/g, '\n\n')
+  
+  // 8. 處理段落開頭的空白
+  formatted = formatted.replace(/^\s+/gm, '')
+  
+  // 將文本分割成段落
+  const paragraphs = formatted.split(/\n\n+/).filter(p => p.trim().length > 0)
+  
+  // 為每個段落添加 HTML 標籤和樣式
+  const formattedParagraphs = paragraphs.map(paragraph => {
+    const trimmedP = paragraph.trim()
+    
+    // 檢查是否為編號段落（包含數字、中文編號、括號編號、星號、破折號等）
+    const isNumbered = /^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*|-|\*\*)/.test(trimmedP)
+    
+    // 重新添加粗體標記（因為之前被移除了）
+    let formattedP = trimmedP.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    
+    if (isNumbered) {
+      return `<p class="formatted-paragraph numbered-paragraph">${formattedP}</p>`
+    } else {
+      return `<p class="formatted-paragraph">${formattedP}</p>`
+    }
+  })
+  
+  return formattedParagraphs.join('')
+}
 
 // 格式化解讀文本，確保每個編號分段清楚
 const formattedInterpretation = computed(() => {
@@ -1266,6 +1333,33 @@ onMounted(() => {
   color: #2c3e50;
   line-height: 1.6;
   margin: 0;
+}
+
+.formatted-gpt-answer {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+  font-family: 'Microsoft JhengHei', sans-serif;
+}
+
+.formatted-gpt-answer .formatted-paragraph {
+  margin: 12px 0;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-gpt-answer .numbered-paragraph {
+  margin-top: 20px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-left: 3px solid #8B5CF6;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(248, 249, 255, 0.8));
+  border-radius: 6px;
+}
+
+.formatted-gpt-answer .formatted-paragraph strong {
+  color: #8B5CF6;
+  font-weight: 600;
 }
 
 .input-tip {

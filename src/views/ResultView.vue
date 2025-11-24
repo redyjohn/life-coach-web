@@ -567,7 +567,7 @@ function getRandomHint(): string {
           <strong>🙋‍♀️ 您的問題：</strong>
           <p>{{ chat.question }}</p>
           <strong>☯️ 八老師解答：</strong>
-          <p>{{ chat.answer }}</p>
+          <div class="formatted-gpt-answer" v-html="formatTextContent(chat.answer)"></div>
         </div>
 
         <!-- 問題輸入區 -->
@@ -752,6 +752,67 @@ function getRandomHint(): string {
   padding: 12px;
   border-radius: 6px;
   border: 1px solid #e9ecef;
+}
+
+/* 格式化內容樣式 */
+.formatted-content {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-content .bazi-paragraph {
+  margin: 16px 0;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-content .numbered-paragraph {
+  margin-top: 28px;
+  margin-bottom: 24px;
+  padding-top: 20px;
+  padding-bottom: 16px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-top: 2px solid rgba(139, 92, 246, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(248, 249, 255, 0.8));
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.formatted-content .numbered-paragraph:first-child {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: none;
+}
+
+.formatted-content .bazi-paragraph strong {
+  color: #8B5CF6;
+  font-size: 1.1em;
+  font-weight: 700;
+  display: inline-block;
+  margin-bottom: 8px;
+  margin-right: 8px;
+}
+
+.formatted-content .numbered-paragraph strong {
+  color: #7C3AED;
+  font-size: 1.15em;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.formatted-content .bazi-paragraph em {
+  color: #7C3AED;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.formatted-content .numbered-paragraph > strong + * {
+  margin-top: 12px;
 }
 
 .qa-section {
@@ -950,6 +1011,32 @@ textarea:disabled {
 .gpt-response p {
   margin: 8px 0;
   white-space: pre-wrap;
+}
+
+.formatted-gpt-answer {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-gpt-answer .formatted-paragraph {
+  margin: 12px 0;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-gpt-answer .numbered-paragraph {
+  margin-top: 20px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-left: 3px solid #8B5CF6;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(248, 249, 255, 0.8));
+  border-radius: 6px;
+}
+
+.formatted-gpt-answer .formatted-paragraph strong {
+  color: #8B5CF6;
+  font-weight: 600;
 }
 
 .leave-dialog {

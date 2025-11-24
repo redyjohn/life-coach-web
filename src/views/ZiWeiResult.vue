@@ -566,7 +566,7 @@ function getRandomHint(): string {
           <strong>🙋‍♀️ 您的問題：</strong>
           <p>{{ chat.question }}</p>
           <strong>🔮 紫薇老師解答：</strong>
-          <p>{{ chat.answer }}</p>
+          <div class="formatted-gpt-answer" v-html="formatTextContent(chat.answer)"></div>
             </div>
 
         <!-- 問題輸入區 -->
@@ -976,6 +976,32 @@ textarea:disabled {
 .gpt-response p {
   margin: 8px 0;
   white-space: pre-wrap;
+}
+
+.formatted-gpt-answer {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-gpt-answer .formatted-paragraph {
+  margin: 12px 0;
+  line-height: 1.8;
+  color: #333;
+}
+
+.formatted-gpt-answer .numbered-paragraph {
+  margin-top: 20px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-left: 3px solid #8B5CF6;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(248, 249, 255, 0.8));
+  border-radius: 6px;
+}
+
+.formatted-gpt-answer .formatted-paragraph strong {
+  color: #8B5CF6;
+  font-weight: 600;
 }
 
 .leave-dialog {
