@@ -258,12 +258,10 @@ const canAskQuestion = computed(() => {
 function formatTextContent(text: string): string {
   if (!text) return ''
   
-  let formatted = text
+  // 1. 處理粗體標記 (Markdown 轉 HTML)
+  let formatted = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   
-  // 先處理粗體標記（在分段之前）
-  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-  
-  // 將 HTML 標籤轉換為純文本進行處理（保留換行）
+  // 2. 清理 HTML 標籤（確保純文本處理）
   if (typeof document !== 'undefined') {
     const tempDiv = document.createElement('div')
     tempDiv.innerHTML = formatted
@@ -273,49 +271,32 @@ function formatTextContent(text: string): string {
     formatted = formatted.replace(/<[^>]*>/g, '')
   }
   
-  // 處理各種編號格式，確保每個編號前都有明顯的分段
-  // 1. 處理數字編號（1. 2. 3. 或 1、2、3、）
-  formatted = formatted.replace(/(\n|^)(\d+[\.、]\s+)/g, '\n\n$2')
+  // 3. 核心分段邏輯：確保所有可能的段落開始符號前都有 \n\n
+  //    匹配：數字編號 (1. 2.)、中文編號 (一、二、)、括號編號 ((1))、星號 (*)、破折號 (-)
+  //    這個正則表達式是關鍵，它在這些符號前強制插入雙換行符。
+  formatted = formatted.replace(
+    /(\n|^)(\d+[\.、]\s*|[一二三四五六七八九十]+[、：]\s*|\(\d+\)\s*|[\*\-]\s+)/g,
+    '\n\n$2'
+  )
   
-  // 2. 處理中文編號（一、二、三、）
-  formatted = formatted.replace(/(\n|^)([一二三四五六七八九十]+[、：]\s*)/g, '\n\n$2')
+  // 4. 處理標題分隔符 (如 # 或 ###)
+  formatted = formatted.replace(/(\n|^)\s*([#\-]{2,})/g, '\n\n$2');
   
-  // 3. 處理括號編號（(1) (2) (3)）
-  formatted = formatted.replace(/(\n|^)(\(\d+\)\s+)/g, '\n\n$2')
-  
-  // 4. 處理星號編號（* * *）
-  formatted = formatted.replace(/(\n|^)(\*\s+)/g, '\n\n$2')
-  
-  // 5. 處理破折號編號（- - -）
-  formatted = formatted.replace(/(\n|^)(-\s+)/g, '\n\n$2')
-  
-  // 6. 處理特殊標題格式（**標題**）
-  formatted = formatted.replace(/(\n|^)(\*\*[^*]+\*\*)/g, '\n\n$2')
-  
-  // 7. 處理多個連續換行，統一為兩個換行
+  // 5. 將所有連續的換行符 (多於兩個) 統一為 \n\n
   formatted = formatted.replace(/\n{3,}/g, '\n\n')
   
-  // 8. 處理段落開頭的空白
-  formatted = formatted.replace(/^\s+/gm, '')
-  
-  // 將文本分割成段落
+  // 6. 將文本分割成段落，並用 <p> 包裹
   const paragraphs = formatted.split(/\n\n+/).filter(p => p.trim().length > 0)
   
-  // 為每個段落添加 HTML 標籤和樣式
   const formattedParagraphs = paragraphs.map(paragraph => {
-    const trimmedP = paragraph.trim()
+    // 重新添加粗體標記 (因為在步驟 2 被移除了)
+    const formattedP = paragraph.trim().replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     
-    // 檢查是否為編號段落（包含數字、中文編號、括號編號、星號、破折號等）
-    const isNumbered = /^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*|-|\*\*)/.test(trimmedP)
+    // 檢查是否為編號段落或標題
+    const isNumbered = /^(\d+[\.、]|[一二三四五六七八九十]+[、：]|\(\d+\)|\*|-|\*\*|#)/.test(formattedP)
     
-    // 重新添加粗體標記（因為之前被移除了）
-    let formattedP = trimmedP.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    
-    if (isNumbered) {
-      return `<p class="formatted-paragraph numbered-paragraph">${formattedP}</p>`
-    } else {
-      return `<p class="formatted-paragraph">${formattedP}</p>`
-    }
+    // 返回帶有樣式的 <p> 標籤
+    return `<p class="formatted-paragraph${isNumbered ? ' numbered-paragraph' : ''}">${formattedP}</p>`
   })
   
   return formattedParagraphs.join('')
